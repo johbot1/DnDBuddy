@@ -7,7 +7,7 @@ import java.util.regex.*;
 public class ScriptParser {
     // Matches: ACT 1 SCENE 2 – Arrival...
     private static final Pattern HEADER_PATTERN =
-            Pattern.compile("^ACT\\s+(\\d+)\\s+SCENE\\s+(\\d+)\\s+–\\s+(.+)$");
+            Pattern.compile("^ACT\\s+(\\d+)\\s+SCENE\\s+(\\d+)\\s+[-–]\\s+(.+)$");
     // <<MUSIC: filename.mp3>>
     private static final Pattern MUSIC_PATTERN =
             Pattern.compile("<<MUSIC:\\s*([^>]+)>>");
