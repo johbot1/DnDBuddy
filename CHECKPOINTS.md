@@ -12,7 +12,7 @@
 ## Phase 2) Script Display & Clickable Text
 - [X] 2.1 Script Loading
     - [X] 2.1.1 Load script text from resource (file/embedded string)
-    - [X] 2.1.2 Define simple markup syntax for links (e.g. `[[Ivor Dotsk]]`)
+    - [X] 2.1.2 Define simple markup syntax for links (e.g. `{Ivor Dotsk}`)
 - [X] 2.2 Script Viewer Implementation
     - [X] 2.2.1 Use `TextFlow` or `WebView` to render non-editable text
     - [X] 2.2.2 Apply basic CSS for readability (fonts, spacing)
