@@ -19,16 +19,13 @@ public static void main(String[] args) {
         frame.setLayout(new BorderLayout());
 
         // --- Script Viewer (Center) ---
-        JTextPane scriptViewer = new JTextPane();
-        scriptViewer.setEditable(false);
-        scriptViewer.setMargin(new Insets(10, 10, 10, 10));
+        JTextPane scriptViewer = createScriptViewer();
         frame.add(new JScrollPane(scriptViewer), BorderLayout.CENTER);
 
         // --- Controls Pane (East) ---
-        JPanel controlsPane = new JPanel();
-        controlsPane.setPreferredSize(new Dimension(250, 0));
-        controlsPane.setLayout(null);  // Absolute positioning
+        JPanel controlsPane = createControlsPane();
         frame.add(controlsPane, BorderLayout.EAST);
+
 
         // Scene/Act Label
         JLabel sceneLabel = new JLabel("Loading…");
@@ -197,4 +194,63 @@ public static void main(String[] args) {
 
         frame.setVisible(true);
     });
+}
+// Creates and returns the configured JTextPane for your script
+private static JTextPane createScriptViewer() {
+    JTextPane tp = new JTextPane();
+    tp.setEditable(false);
+    tp.setMargin(new Insets(10, 10, 10, 10));
+    return tp;
+}
+
+// Creates and returns the right-side panel (scene label, sliders, Music/SFX groups)
+private static JPanel createControlsPane() {
+    JPanel panel = new JPanel();
+    panel.setPreferredSize(new Dimension(250, 0));
+    panel.setLayout(null);
+
+    // Scene/Act Label
+    JLabel sceneLabel = new JLabel("Loading…");
+    sceneLabel.setFont(sceneLabel.getFont().deriveFont(Font.BOLD, 14f));
+    sceneLabel.setBounds(10, 10, 230, 25);
+    panel.add(sceneLabel);
+
+    // Progress Slider
+    JSlider progressSlider = new JSlider(0, 100, 0);
+    progressSlider.setBounds(10, 40, 230, 20);
+    progressSlider.setEnabled(false);
+    panel.add(progressSlider);
+
+    // Volume
+    JLabel volumeLabel = new JLabel("Volume");
+    volumeLabel.setBounds(10, 70, 230, 15);
+    panel.add(volumeLabel);
+
+    JSlider volumeSlider = new JSlider(0, 20, 10);
+    volumeSlider.setMajorTickSpacing(5);
+    volumeSlider.setPaintTicks(true);
+    volumeSlider.setPaintLabels(true);
+    volumeSlider.setBounds(10, 90, 230, 50);
+    panel.add(volumeSlider);
+
+    // Music Section
+    JPanel musicPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+    musicPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(EtchedBorder.LOWERED),
+            "Music", TitledBorder.LEFT, TitledBorder.TOP));
+    musicPanel.setBounds(10, 150, 230, 100);
+    musicPanel.add(new JButton("Play"));
+    musicPanel.add(new JButton("Pause"));
+    musicPanel.add(new JButton("Fade Out"));
+    panel.add(musicPanel);
+
+    // SFX Section (empty for now)
+    JPanel sfxPanel = new JPanel(new GridLayout(0, 2, 5, 5));
+    sfxPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createEtchedBorder(EtchedBorder.LOWERED),
+            "SFX", TitledBorder.LEFT, TitledBorder.TOP));
+    sfxPanel.setBounds(10, 260, 230, 330);
+    panel.add(sfxPanel);
+
+    return panel;
 }
