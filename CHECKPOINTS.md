@@ -1,13 +1,13 @@
 # CHECKPOINTS.md
 
 ## Phase 1) Setup and Window Creation
-- [ ] 1.1 Initialize Java Project
-    - [ ] 1.1.1 Create `Main` class extending `Application`
-    - [ ] 1.1.2 Set up `start(Stage primaryStage)` and launch
-- [ ] 1.2 Basic Window Layout
-    - [ ] 1.2.1 Create root pane (e.g. `BorderPane` or `AnchorPane`)
-    - [ ] 1.2.2 Reserve left area for “Script Viewer” and right for “Controls”
-    - [ ] 1.2.3 Apply minimal styling and window title
+- [X] 1.1 Initialize Java Project
+    - [X] 1.1.1 Create `Main` class extending `Application`
+    - [X] 1.1.2 Set up `start(Stage primaryStage)` and launch
+- [X] 1.2 Basic Window Layout
+    - [X] 1.2.1 Create root pane (e.g. `BorderPane` or `AnchorPane`)
+    - [X] 1.2.2 Reserve left area for “Script Viewer” and right for “Controls”
+    - [X] 1.2.3 Apply minimal styling and window title
 
 ## Phase 2) Script Display & Clickable Text
 - [ ] 2.1 Script Loading
