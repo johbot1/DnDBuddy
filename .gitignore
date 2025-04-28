@@ -26,3 +26,4 @@ replay_pid*
 # Ignoring all IntelliJ stuff
 .idea
 /.idea
+/out/
