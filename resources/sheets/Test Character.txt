@@ -1,0 +1,21 @@
+Name: Test Character
+Role: NPC
+Race: Human
+Background:
+  A placeholder character used to verify clickable‐term functionality.
+
+Attributes:
+  STR: 10
+  DEX: 12
+  CON: 14
+  INT: 16
+  WIS:  8
+  CHA: 13
+
+Abilities:
+  • Test Insight: Knows exactly when to appear on screen.
+  • Placeholder Strike: Deals 1 point of imaginary damage.
+  • Debug Sense: Detects parser errors within 10 feet.
+
+Notes:
+  Use this sheet to confirm that clicking “Test Character” pops up this exact text.
