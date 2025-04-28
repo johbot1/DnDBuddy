@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Set;
 
+class Main extends JFrame {
 public static void main(String[] args) {
     SwingUtilities.invokeLater(() -> {
         // --- Frame Setup (Phase 1) ---
@@ -202,4 +203,5 @@ private static void styleClickableTerms(JTextPane scriptViewer, Set<String> term
             } catch (BadLocationException ignored) {}
         }
     });
+}
 }
