@@ -1,0 +1,5 @@
+ACT 1 SCENE 1 - Test Scene
+
+<<MUSIC: test_music.mp3>> <<SFX: test_sfx>>
+
+Hello {Test Character}, this is a test.
