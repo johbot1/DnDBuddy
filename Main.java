@@ -1,6 +1,12 @@
 import javax.swing.*;
 import javax.swing.border.*;
+import javax.swing.text.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public static void main(String[] args) {
@@ -71,10 +77,19 @@ public static void main(String[] args) {
 
         // --- Load & parse the script ---
         try {
-            // Adjust path to your script file
             var parsed = ScriptParser.parse(
-                    Paths.get("scripts/act1_scene2.txt")
+                    Paths.get("resources/scripts/act1_scene1.txt")
             );
+
+            // ─── INSERT PARSER SMOKE-TEST HERE ───
+            System.out.println("ACT:    " + parsed.getAct());
+            System.out.println("SCENE:  " + parsed.getScene());
+            System.out.println("TITLE:  " + parsed.getTitle());
+            System.out.println("MUSIC:  " + parsed.getMusicFile());
+            System.out.println("SFX:    " + parsed.getSfxCues());
+            System.out.println("TERMS:  " + parsed.getClickableTerms());
+            System.out.println("TEXT:\n" + parsed.getText());
+            // ─────────────────────────────────────
 
             // 1) Update scene label
             sceneLabel.setText(
@@ -104,10 +119,72 @@ public static void main(String[] args) {
 
             // 4) Fill script viewer with cleaned text
             scriptViewer.setText(parsed.getText());
+            String text = parsed.getText();
+            scriptViewer.setText(text);
+
+
 
             // 5) Collect clickable terms for later styling
             var terms = parsed.getClickableTerms();
-            // TODO: walk the document, find these terms, and attach mouse listeners
+            // ─── START CLICKABLE-TERM STYLING & HANDLERS ───
+            // 1) Prepare a blue-underlined “link” style
+            StyledDocument doc = scriptViewer.getStyledDocument();
+            Style linkStyle = doc.addStyle("link", null);
+            StyleConstants.setForeground(linkStyle, Color.BLUE);
+            StyleConstants.setUnderline(linkStyle, true);
+
+            // 2) Apply it to each occurrence of every term
+            String fullText = text;
+            for (String term : terms) {
+                int idx = 0;
+                while ((idx = fullText.indexOf(term, idx)) >= 0) {
+                    doc.setCharacterAttributes(idx, term.length(), linkStyle, false);
+                    idx += term.length();
+                }
+            }
+
+            // 3) On click, open the corresponding sheet file
+            scriptViewer.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    try {
+                        int pos   = scriptViewer.viewToModel2D(e.getPoint());
+                        int start = Utilities.getWordStart(scriptViewer, pos);
+                        int end   = Utilities.getWordEnd  (scriptViewer, pos);
+                        String clicked = doc.getText(start, end - start);
+                        if (terms.contains(clicked)) {
+                            Path sheet = Paths.get("resources/sheets", clicked + ".txt");
+                            String content = Files.readString(sheet);
+                            JOptionPane.showMessageDialog(
+                                    frame, content, clicked, JOptionPane.PLAIN_MESSAGE
+                            );
+                        }
+                    } catch (Exception ignored) {}
+                }
+            });
+
+            // 4) On hover, show hand cursor + tooltip
+            scriptViewer.addMouseMotionListener(new MouseMotionAdapter() {
+                @Override
+                public void mouseMoved(MouseEvent e) {
+                    try {
+                        int pos   = scriptViewer.viewToModel2D(e.getPoint());
+                        int start = Utilities.getWordStart(scriptViewer, pos);
+                        int end   = Utilities.getWordEnd  (scriptViewer, pos);
+                        String over = doc.getText(start, end - start);
+                        if (terms.contains(over)) {
+                            scriptViewer.setCursor(Cursor.getPredefinedCursor(
+                                    Cursor.HAND_CURSOR));
+                            scriptViewer.setToolTipText("Open sheet for \"" + over + "\"");
+                        } else {
+                            scriptViewer.setCursor(Cursor.getDefaultCursor());
+                            scriptViewer.setToolTipText(null);
+                        }
+                    } catch (BadLocationException ignored) {}
+                }
+            });
+            // ─── END CLICKABLE-TERM STYLING & HANDLERS ───
+
 
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(
