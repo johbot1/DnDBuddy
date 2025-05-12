@@ -87,10 +87,8 @@ public class ScriptParser {
         private final Set<String> sfxCues, clickableTerms;
 
         public ParsedScript(int act, int scene, String title,
-                            String musicFile,
-                            Set<String> sfxCues,
-                            Set<String> clickableTerms,
-                            String text) {
+        String musicFile, Set<String> sfxCues, Set<String> clickableTerms,
+        String text) {
             this.act = act;
             this.scene = scene;
             this.title = title;
