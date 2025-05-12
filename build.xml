@@ -31,6 +31,20 @@
         </java>
     </target>
 
+    <!-- 3) Package everything into a runnable JAR -->
+    <target name="jar" depends="compile">
+        <!-- ensure dist exists -->
+        <mkdir dir="dist"/>
+
+        <!-- bundle the classes+resources into one JAR -->
+        <jar destfile="dist/DMBuddy.jar" basedir="${classes.dir}">
+            <manifest>
+                <!-- fully-qualified name of your main class -->
+                <attribute name="Main-Class" value="Main"/>
+            </manifest>
+        </jar>
+    </target>
+
     <!-- 4) Clean up -->
     <target name="clean">
         <delete dir="${build.dir}"/>
