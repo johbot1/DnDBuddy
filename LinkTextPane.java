@@ -14,7 +14,7 @@ class LinkTextPane extends JTextPane {
         setToolTipText(" ");    // give it a single space (or some placeholder)
         ToolTipManager.sharedInstance().registerComponent(this);
         ToolTipManager.sharedInstance().setInitialDelay(100);   // show quickly
-        ToolTipManager.sharedInstance().setDismissDelay(10_000); // linger 10s
+        ToolTipManager.sharedInstance().setDismissDelay(1000); // linger 1s
     }
 
     public void setClickableTerms(Set<String> terms) {
