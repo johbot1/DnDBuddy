@@ -11,7 +11,7 @@ class LinkTextPane extends JTextPane {
     public LinkTextPane() {
         super();
         // enable Swing tooltips
-        setToolTipText("");
+        setToolTipText(" ");    // give it a single space (or some placeholder)
         ToolTipManager.sharedInstance().registerComponent(this);
         ToolTipManager.sharedInstance().setInitialDelay(100);   // show quickly
         ToolTipManager.sharedInstance().setDismissDelay(10_000); // linger 10s
@@ -23,16 +23,18 @@ class LinkTextPane extends JTextPane {
 
     @Override
     public String getToolTipText(MouseEvent e) {
+        String defaultTip = super.getToolTipText(e);
         int pos = viewToModel2D(e.getPoint());
-        if (pos < 0) return null;
+        if (pos < 0) return defaultTip;
         try {
-            int start = Utilities.getWordStart(this, pos);
-            int end   = Utilities.getWordEnd  (this, pos);
-            String word = getDocument().getText(start, end - start);
-            if (clickables.contains(word)) {
-                return "Open sheet for \"" + word + "\"";
-            }
-        } catch (BadLocationException ignored) {}
-        return null;
+        int start = Utilities.getWordStart(this, pos);
+        int end   = Utilities.getWordEnd  (this, pos);
+        String word = getDocument().getText(start, end - start);
+        if (clickables.contains(word)) {
+            return "Open sheet for \"" + word + "\"";
+        }
+    } catch (BadLocationException ignored) {}
+//  TEMPORARY: always show this placeholder so we know tooltips are wired up
+        return " ";  // a non-empty string (here a non-breaking space)
     }
 }
