@@ -22,20 +22,13 @@ public class Main {
     private JSlider volumeSlider;
 
     /**
-     * Entry point; initializes the Swing UI on the event dispatch thread.
+     * Entry point; initializes the Swing UI.
      *
      * @param args command-line arguments (unused)
-     * @throws Exception if UI initialization fails
+     * @throws IOException if UI initialization or script loading fails
      */
-    public static void main(String[] args) throws Exception {
-        SwingUtilities.invokeLater(() -> {
-            try {
-                new Main().initUI();
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        });
+    public static void main(String[] args) throws IOException {
+        new Main().initUI();
     }
 
     /**
@@ -216,14 +209,14 @@ public class Main {
         pane.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
-                int pos = pane.viewToModel2D(e.getPoint());
                 try {
+                    int pos = pane.viewToModel2D(e.getPoint());
                     int start = Utilities.getWordStart(pane, pos);
                     int end = Utilities.getWordEnd(pane, pos);
-                    String clicked = pane.getDocument().getText(start, end - start);
+                    String fullText = pane.getText();
+                    String clicked = fullText.substring(start, end);
                     if (terms.contains(clicked)) showCharacterSheet(clicked);
-                } catch (BadLocationException ignored) {
-                } catch (IOException ex) {
+                } catch (BadLocationException ex) {
                     throw new RuntimeException(ex);
                 }
             }
@@ -234,12 +227,16 @@ public class Main {
      * Reads and displays the character sheet in a dialog.
      *
      * @param name character name matching the sheet file
-     * @throws IOException if sheet file cannot be read
      */
-    private void showCharacterSheet(String name) throws IOException {
+    private void showCharacterSheet(String name) {
         Path sheetPath = Paths.get("resources/sheets", name + ".txt");
         validateSheetPath(sheetPath);
-        String content = Files.readString(sheetPath);
+        String content;
+        try {
+            content = Files.readString(sheetPath);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         JOptionPane.showMessageDialog(frame, content, name, JOptionPane.PLAIN_MESSAGE);
     }
 
