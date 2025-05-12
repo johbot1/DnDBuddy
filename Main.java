@@ -40,12 +40,13 @@ public static void main(String[] args) {
     });
 }
 // Creates and returns the configured JTextPane for your script
-private static JTextPane createScriptViewer() {
-    JTextPane tp = new JTextPane();
+private static LinkTextPane createScriptViewer() {
+    LinkTextPane tp = new LinkTextPane();
     tp.setEditable(false);
-    tp.setMargin(new Insets(10, 10, 10, 10));
+    tp.setMargin(new Insets(10,10,10,10));
     return tp;
 }
+
 
 // Creates and returns the right-side panel (scene label, sliders, Music/SFX groups)
 private static JPanel createControlsPane() {
@@ -127,6 +128,12 @@ private static void bindScriptToUI(JTextPane scriptViewer, JPanel controlsPane, 
         // 3) Script Text
         String text = parsed.getText();
         scriptViewer.setText(text);
+
+        // 3a) Let the pane know its terms (for tooltips)
+        ((LinkTextPane)scriptViewer).setClickableTerms(parsed.getClickableTerms());
+
+        // 3b) Now style and wire clicks as before
+        styleClickableTerms(scriptViewer, parsed.getClickableTerms(), frame);
 
         // 4) Style + listeners for clickable terms
         styleClickableTerms(scriptViewer, parsed.getClickableTerms(), frame);
