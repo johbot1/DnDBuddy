@@ -27,7 +27,7 @@ public class Main {
      * @param args command-line arguments (unused)
      * @throws IOException if UI initialization or script loading fails
      */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, BadLocationException {
         new Main().initUI();
     }
 
@@ -36,7 +36,7 @@ public class Main {
      *
      * @throws IOException if the script file cannot be read
      */
-    private void initUI() throws IOException {
+    private void initUI() throws IOException, BadLocationException {
         frame = new JFrame("DM Buddy");
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setSize(1000, 800);
@@ -147,11 +147,11 @@ public class Main {
      * @param scriptPath path to the script file
      * @throws IOException if parsing or file reading fails
      */
-    private void loadScript(Path scriptPath) throws IOException {
+    private void loadScript(Path scriptPath) throws IOException, BadLocationException {
         var parsed = ScriptParser.parse(scriptPath);
 
         // Update scene heading
-        sceneLabel.setText(String.format("Act %d, Scene %d – %s",
+        sceneLabel.setText(String.format("Act %s, Scene %s – %s",
                 parsed.getAct(), parsed.getScene(), parsed.getTitle()));
 
         // Load background music if available
