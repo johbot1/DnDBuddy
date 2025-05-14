@@ -171,6 +171,7 @@ public class Main {
         Set<String> terms = parsed.getClickableTerms();
         scriptViewer.setClickableTerms(terms);
         styleClickableTerms(scriptViewer, terms);
+        styleMusicCues(scriptViewer,parsed.getMusicCues());
     }
 
     /**
@@ -240,6 +241,22 @@ public class Main {
         JOptionPane.showMessageDialog(frame, content, name, JOptionPane.PLAIN_MESSAGE);
     }
 
+
+    private void styleMusicCues(LinkTextPane pane, Set<String> cues) throws BadLocationException {
+        StyledDocument doc = pane.getStyledDocument();
+        Style musicStyle = doc.addStyle("music", null);
+        StyleConstants.setForeground(musicStyle, Color.RED);
+
+        String text = doc.getText(0, doc.getLength());
+        for (String cue : cues) {
+            int idx = text.indexOf("[" + cue + "]");
+            while (idx >= 0) {
+                // Apply style only to inside of brackets
+                doc.setCharacterAttributes(idx, cue.length() + 2, musicStyle, false);
+                idx = text.indexOf("[" + cue + "]", idx) + 1;
+            }
+        }
+    }
     // Media control stubs – replace with real audio handling as needed
     /** Stub: load music file for playback. */
     private void loadMusic(String file) { System.out.println("Load music: " + file); }
