@@ -1,5 +1,39 @@
-ACT 1 SCENE 1 - Test Scene
+ACT 1 SCENE 1 - Extended Test Scene
 
-<<MUSIC: test_music.mp3>> <<SFX: test_sfx>>
+<<MUSIC: intro_theme.mp3>> <<SFX: door_creak>> <<SFX: distant_thunder>>
 
-Hello {Test Character}, this is a test.
+The wind howls through the ancient corridors of the abandoned keep, carrying with it the faint echo of long-forgotten chants. In the flickering torchlight, {Test Character} pauses at the threshold, senses on high alert.
+
+A distant rumble shakes the floor. Framed by the archway, a {Mysterious Stranger} emerges, cloaked in shadows. Their voice, barely more than a whisper, calls out: “It’s too late to turn back now.”
+
+<<SFX: stranger_whisper>>
+
+The torchlight sputters as the stranger steps closer, revealing an intricate sigil etched into the stone floor—an ancient symbol matching the crest on {Test Character}’s helm.
+
+<<MUSIC: tension_rise.mp3>>
+
+Suddenly, the floor beneath their feet shifts, revealing a hidden trapdoor. A steel grate slams shut with a deafening clang.
+
+<<SFX: trapdoor_clang>>
+
+Heart pounding, {Test Character} grips the hilt of their sword. “What manner of treachery is this?” they mutter under their breath.
+
+Steeling their resolve, they descend into the darkness, guided by the ghostly glow of the {Ancient Tome} that rests in their satchel.
+
+<<MUSIC: ambient_darkness.mp3>> <<SFX: footsteps_soft>> <<SFX: heartbeat>>
+
+Below, torch sconces ignite one by one as if summoned by an unseen hand. Shadows dance along the walls, painting grotesque shapes that spiral into the gloom.
+
+“Stay close,” {Mysterious Stranger} urges, their tone edged with urgency. “The others did not survive the trials ahead.”
+
+<<SFX: mechanical_click>>
+
+At the far end, a massive door looms—ornate iron bound in ancient runes. A faint hum suggests powerful magics at play.
+
+{Test Character} steps forward, pressing a hidden panel carved into the stone. The runes flare with violet light, illuminating a single protruding lever.
+
+<<SFX: rune_activation>> <<MUSIC: portal_opening.mp3>>
+
+As the door swings open, a blinding light pours forth. Beyond lies a cavernous hall, the center dominated by a stone altar and the silhouette of a {Hidden Lever}.
+
+End of Act 1, Scene 1.
