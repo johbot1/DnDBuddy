@@ -24,8 +24,7 @@ public class ScriptParser {
 
     public static ParsedScript parse(Path scriptFile) throws IOException {
         List<String> lines = Files.readAllLines(scriptFile);
-        int act = 0, scene = 0;
-        String title = "";
+        String act = "", scene = "", title = "";
         String currentMusicFile = null;
 
         Set<String> clickableTerms = new LinkedHashSet<>();
@@ -38,93 +37,95 @@ public class ScriptParser {
         for (String raw : lines) {
             String line = raw;
 
-            // 1) Parse header only once
-            if (!headerFound && !line.trim().isEmpty()) {
-                Matcher hm = HEADER_PATTERN.matcher(line.trim());
-                if (hm.matches()) {
-                    act   = Integer.parseInt(hm.group(1));
-                    scene = Integer.parseInt(hm.group(2));
-                    title = hm.group(3);
-                    headerFound = true;
-                    continue;  // don’t include header in script text
-                }
+            // 1) Header extraction
+            if (act.isEmpty() && line.startsWith("ACT ")) {
+                act = line;
+                continue;
+            }
+            if (scene.isEmpty() && line.startsWith("SCENE ")) {
+                scene = line;
+                continue;
+            }
+            if (title.isEmpty() && line.startsWith("TITLE:")) {
+                title = line.substring("TITLE:".length()).trim();
+                continue;
             }
 
-            // 2) Extract music tag(s)
+            // 2) Extract MUSIC tags and placeholders
             boolean hasMusicOnThisLine = false;
             Matcher mm = MUSIC_PATTERN.matcher(line);
             while (mm.find()) {
                 currentMusicFile = mm.group(1).trim();
                 hasMusicOnThisLine = true;
+                // Build a display name and record it
+                String display = extractDisplayName(currentMusicFile);
+                musicCues.add(display);
+
+                // Replace tag with bracketed placeholder
+                line = line.replaceFirst(Pattern.quote(mm.group(0)), "[" + display + "]");
             }
-            line = MUSIC_PATTERN.matcher(line).replaceAll("");
 
             // 3) Extract SFX tags
             Matcher sm = SFX_PATTERN.matcher(line);
+            StringBuffer sbSfx = new StringBuffer();
             while (sm.find()) {
                 sfxCues.add(sm.group(1).trim());
+                sm.appendReplacement(sbSfx, "");
             }
-            line = SFX_PATTERN.matcher(line).replaceAll("");
+            sm.appendTail(sbSfx);
+            line = sbSfx.toString();
 
-            // 4) Extract clickable terms and remove braces
+            // 4) Extract clickable terms and remove ALL braces
             Matcher tm = TERM_PATTERN.matcher(line);
-            StringBuffer sbfr = new StringBuffer();
+            StringBuffer sbClick = new StringBuffer();
             while (tm.find()) {
                 String term = tm.group(1).trim();
-                if (!clickableTerms.contains(term)) {
-                clickableTerms.add(term);
-                tm.appendReplacement(sbfr, term);
+                clickableTerms.add(term);          // add to set (duplicates ignored)
+                tm.appendReplacement(sbClick, term);  // always strip the `{}`
                 System.out.println("Term: " + term + " added to clickable terms.\nCurrent Size: " + clickableTerms.size());
-                }
-            }
-            tm.appendTail(sbfr);
 
-            // 5) Append to cleaned script
-            String textLine = sbfr.toString().trim();
-            if (hasMusicOnThisLine){
-                String display = extractDisplayName(currentMusicFile);
-                musicCues.add(display);
-                // Keep the already empty line AND one extra blank line
+            }
+            tm.appendTail(sbClick);
+
+            // 5) Collapse blank lines, but keep one after MUSIC
+            String textLine = sbClick.toString().trim();
+            if (hasMusicOnThisLine) {
                 cleaned.append(textLine).append("\n\n");
-            }else if (!textLine.isEmpty()) {
-                // Only non-empty lines get an extra line
+            } else if (!textLine.isEmpty()) {
                 cleaned.append(textLine).append("\n");
             }
         }
 
         return new ParsedScript(
-                act, scene, title,
+                act,
+                scene,
+                title,
                 currentMusicFile,
                 Collections.unmodifiableSet(sfxCues),
                 Collections.unmodifiableSet(clickableTerms),
+                Collections.unmodifiableSet(sfxCues),
                 cleaned.toString()
         );
     }
 
-    public static class ParsedScript {
-        private final int act, scene;
-        private final String title, musicFile, text;
-        private final Set<String> sfxCues, clickableTerms;
 
-        public ParsedScript(int act, int scene, String title,
-        String musicFile, Set<String> sfxCues, Set<String> clickableTerms,
-        String text) {
-            this.act = act;
-            this.scene = scene;
-            this.title = title;
-            this.musicFile = musicFile;
-            this.sfxCues = sfxCues;
-            this.clickableTerms = clickableTerms;
-            this.text = text;
+
+    /**
+     * Converts a filename into a human-readable display name:
+     * Strips extensions |
+     * Splits camelCase |
+     * Replaces underscores/hyphens with spaces
+     */
+    private static String extractDisplayName(String filename) {
+        String name = filename;
+        int dotIndex = name.lastIndexOf('.');
+        if (dotIndex > 0) {
+            name = name.substring(0, dotIndex);
         }
-
-//        -- Getters --
-        public int getAct()              { return act; }
-        public int getScene()            { return scene; }
-        public String getTitle()         { return title; }
-        public String getMusicFile()     { return musicFile; }
-        public Set<String> getSfxCues()  { return sfxCues; }
-        public Set<String> getClickableTerms() { return clickableTerms; }
-        public String getText()          { return text; }
+        // split camelCase boundaries
+        name = name.replaceAll("([a-z])([A-Z])", "$1 $2");
+        // replace underscores/hyphens
+        name = name.replaceAll("[-_]", " ");
+        return name.trim();
     }
 }
