@@ -1,6 +1,7 @@
 import javax.swing.*;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.Utilities;
+import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.util.Set;
 
@@ -15,6 +16,9 @@ class LinkTextPane extends JTextPane {
         ToolTipManager.sharedInstance().registerComponent(this);
         ToolTipManager.sharedInstance().setInitialDelay(100);   // show quickly
         ToolTipManager.sharedInstance().setDismissDelay(1000); // linger 1s
+        setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR)); // Use the standard arrow
+        setFocusable(false); // No focus caret
+        setHighlighter(null); // No text selection
     }
 
     public void setClickableTerms(Set<String> terms) {
