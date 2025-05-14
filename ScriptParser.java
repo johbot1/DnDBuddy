@@ -1,8 +1,12 @@
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.regex.*;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ScriptParser {
     // Matches: ACT 1 SCENE 2 – Arrival...
@@ -20,14 +24,16 @@ public class ScriptParser {
 
     public static ParsedScript parse(Path scriptFile) throws IOException {
         List<String> lines = Files.readAllLines(scriptFile);
-
         int act = 0, scene = 0;
         String title = "";
-        String musicFile = null;
-        Set<String> sfxCues = new LinkedHashSet<>();
-        Set<String> clickableTerms = new LinkedHashSet<>();
-        StringBuilder cleaned = new StringBuilder();
+        String currentMusicFile = null;
 
+        Set<String> clickableTerms = new LinkedHashSet<>();
+        Set<String> sfxCues       = new LinkedHashSet<>();
+        Set<String> musicCues     = new LinkedHashSet<>();
+        StringBuilder cleaned     = new StringBuilder();
+
+        // Begin Parsing
         boolean headerFound = false;
         for (String raw : lines) {
             String line = raw;
@@ -48,7 +54,7 @@ public class ScriptParser {
             boolean hasMusicOnThisLine = false;
             Matcher mm = MUSIC_PATTERN.matcher(line);
             while (mm.find()) {
-                musicFile = mm.group(1).trim();
+                currentMusicFile = mm.group(1).trim();
                 hasMusicOnThisLine = true;
             }
             line = MUSIC_PATTERN.matcher(line).replaceAll("");
@@ -76,6 +82,8 @@ public class ScriptParser {
             // 5) Append to cleaned script
             String textLine = sbfr.toString().trim();
             if (hasMusicOnThisLine){
+                String display = extractDisplayName(currentMusicFile);
+                musicCues.add(display);
                 // Keep the already empty line AND one extra blank line
                 cleaned.append(textLine).append("\n\n");
             }else if (!textLine.isEmpty()) {
@@ -86,7 +94,7 @@ public class ScriptParser {
 
         return new ParsedScript(
                 act, scene, title,
-                musicFile,
+                currentMusicFile,
                 Collections.unmodifiableSet(sfxCues),
                 Collections.unmodifiableSet(clickableTerms),
                 cleaned.toString()
