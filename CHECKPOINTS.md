@@ -13,13 +13,13 @@
 - [X] 2.1 Script Loading
     - [X] 2.1.1 Load script text from resource (file/embedded string)
     - [X] 2.1.2 Define simple markup syntax for links (e.g. `{Ivor Dotsk}`)
-- [X] 2.2 Script Viewer Implementation
-    - [X] 2.2.1 Use `TextFlow` or `WebView` to render non-editable text
-    - [X] 2.2.2 Apply basic CSS for readability (fonts, spacing)
-- [X] 2.3 Clickable & Hoverable Words
-    - [X] 2.3.1 Build a map of keywords → metadata (character sheet, spell info)
-    - [X] 2.3.2 Attach `Tooltip` on hover to show summary
-    - [X] 2.3.3 Attach mouse-click handler to open detailed pop-up (`Dialog`/new `Stage`)
+- [] 2.2 Script Viewer Implementation
+    - [] 2.2.1 Use `TextFlow` or `WebView` to render non-editable text
+    - [] 2.2.2 Apply basic CSS for readability (fonts, spacing)
+- [] 2.3 Clickable & Hoverable Words
+    - [] 2.3.1 Build a map of keywords → metadata (character sheet, spell info)
+    - [] 2.3.2 Attach `Tooltip` on hover to show summary
+    - [] 2.3.3 Attach mouse-click handler to open detailed pop-up (`Dialog`/new `Stage`)
 
 ## Phase 3) Audio System Integration
 - [ ] 3.1 MediaPlayer Setup
