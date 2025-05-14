@@ -63,8 +63,11 @@ public class ScriptParser {
             StringBuffer sbfr = new StringBuffer();
             while (tm.find()) {
                 String term = tm.group(1).trim();
+                if (!clickableTerms.contains(term)) {
                 clickableTerms.add(term);
                 tm.appendReplacement(sbfr, term);
+                System.out.println("Term: " + term + " added to clickable terms.\nCurrent Size: " + clickableTerms.size());
+                }
             }
             tm.appendTail(sbfr);
 
