@@ -168,8 +168,12 @@ public class Main {
         scriptViewer.setText(parsed.getText());
         Set<String> terms = parsed.getClickableTerms();
         scriptViewer.setClickableTerms(terms);
-        styleClickableTerms(scriptViewer, terms);
-        styleMusicCues(scriptViewer,parsed.getMusicCues());
+        styleClickableTerms(
+                scriptViewer,
+                parsed.getClickableTerms(),
+                parsed.getMusicCues()
+        );
+
     }
 
     /**
@@ -184,43 +188,51 @@ public class Main {
     }
 
     /**
-     * Styles specified terms as clickable links and registers click handler
+     * Styles specified clickables as clickable links and registers click handler
      * to display character sheets.
      *
      * @param pane  text pane containing script
-     * @param terms set of terms to highlight
+     * @param clickables set of clickables to highlight
+     *  //TODO: Fix [braces] not turning RED!
      */
-    private void styleClickableTerms(JTextPane pane, Set<String> terms) {
+    private void styleClickableTerms(JTextPane pane, Set<String> clickables, Set<String> musicCues) {
         StyledDocument doc = pane.getStyledDocument();
+
+        // Blue for {braces}
         Style linkStyle = doc.addStyle("link", null);
         StyleConstants.setForeground(linkStyle, Color.BLUE);
         StyleConstants.setUnderline(linkStyle, true);
 
+        // Red for [Brackets]
+        Style musicStyle = doc.addStyle("music", null);
+        StyleConstants.setForeground(musicStyle, Color.RED);
+
         String text = pane.getText();
-        for (String term : terms) {
+
+        // 1) Style all normal brace clickables (e.g {term})
+        for (String term : clickables) {
+            String placeholder = "{" + term + "}";
             int idx = 0;
             while ((idx = text.indexOf(term, idx)) >= 0) {
-                doc.setCharacterAttributes(idx, term.length(), linkStyle, false);
+                doc.setCharacterAttributes(idx, placeholder.length(), linkStyle, false);
                 idx += term.length();
             }
         }
 
-        pane.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                try {
-                    int pos = pane.viewToModel2D(e.getPoint());
-                    int start = Utilities.getWordStart(pane, pos);
-                    int end = Utilities.getWordEnd(pane, pos);
-                    String fullText = pane.getText();
-                    String clicked = fullText.substring(start, end);
-                    if (terms.contains(clicked)) showCharacterSheet(clicked);
-                } catch (BadLocationException ex) {
-                    throw new RuntimeException(ex);
-                }
+        // 2) Style all music cues (e.g [cue])
+        for (String cue : musicCues) {
+            String placeholder = "[" + cue + "]";
+            int idx = 0;
+            while ((idx = text.indexOf(placeholder, idx)) >= 0) {
+                doc.setCharacterAttributes(idx,
+                        placeholder.length(),
+                        musicStyle,
+                        false);
+                idx += placeholder.length();
             }
-        });
+        }
     }
+
 
     /**
      * Reads and displays the character sheet in a dialog.
@@ -239,22 +251,6 @@ public class Main {
         JOptionPane.showMessageDialog(frame, content, name, JOptionPane.PLAIN_MESSAGE);
     }
 
-
-    private void styleMusicCues(LinkTextPane pane, Set<String> cues) throws BadLocationException {
-        StyledDocument doc = pane.getStyledDocument();
-        Style musicStyle = doc.addStyle("music", null);
-        StyleConstants.setForeground(musicStyle, Color.RED);
-
-        String text = doc.getText(0, doc.getLength());
-        for (String cue : cues) {
-            int idx = text.indexOf("[" + cue + "]");
-            while (idx >= 0) {
-                // Apply style only to inside of brackets
-                doc.setCharacterAttributes(idx, cue.length() + 2, musicStyle, false);
-                idx = text.indexOf("[" + cue + "]", idx) + 1;
-            }
-        }
-    }
     // Media control stubs – replace with real audio handling as needed
     /** Stub: load music file for playback. */
     private void loadMusic(String file) { System.out.println("Load music: " + file); }
