@@ -45,9 +45,11 @@ public class ScriptParser {
             }
 
             // 2) Extract music tag(s)
+            boolean hasMusicOnThisLine = false;
             Matcher mm = MUSIC_PATTERN.matcher(line);
             while (mm.find()) {
                 musicFile = mm.group(1).trim();
+                hasMusicOnThisLine = true;
             }
             line = MUSIC_PATTERN.matcher(line).replaceAll("");
 
@@ -72,7 +74,14 @@ public class ScriptParser {
             tm.appendTail(sbfr);
 
             // 5) Append to cleaned script
-            cleaned.append(sbfr).append("\n");
+            String textLine = sbfr.toString().trim();
+            if (hasMusicOnThisLine){
+                // Keep the already empty line AND one extra blank line
+                cleaned.append(textLine).append("\n\n");
+            }else if (!textLine.isEmpty()) {
+                // Only non-empty lines get an extra line
+                cleaned.append(textLine).append("\n");
+            }
         }
 
         return new ParsedScript(
