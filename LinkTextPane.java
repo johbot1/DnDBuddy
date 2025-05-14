@@ -7,7 +7,7 @@ import java.util.Set;
 
 // A JTextPane that knows how to show tooltips for clickable terms
 class LinkTextPane extends JTextPane {
-    private Set<String> clickables = Set.of();
+    private Set<String> clickable = Set.of();
 
     public LinkTextPane() {
         super();
@@ -22,7 +22,7 @@ class LinkTextPane extends JTextPane {
     }
 
     public void setClickableTerms(Set<String> terms) {
-        this.clickables = terms;
+        this.clickable = terms;
     }
 
     @Override
@@ -34,7 +34,7 @@ class LinkTextPane extends JTextPane {
         int start = Utilities.getWordStart(this, pos);
         int end   = Utilities.getWordEnd  (this, pos);
         String word = getDocument().getText(start, end - start);
-        if (clickables.contains(word)) {
+        if (clickable.contains(word)) {
             return "Open sheet for \"" + word + "\"";
         }
     } catch (BadLocationException ignored) {}

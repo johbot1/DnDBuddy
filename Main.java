@@ -18,8 +18,6 @@ public class Main {
     private LinkTextPane scriptViewer;
     private JLabel sceneLabel;
     private JPanel sfxPanel;
-    private JPanel musicPanel;
-    private JSlider volumeSlider;
 
     /**
      * Entry point; initializes the Swing UI.
@@ -104,7 +102,7 @@ public class Main {
 
         // Volume control
         panel.add(new JLabel("Volume"));
-        volumeSlider = new JSlider(0, 20, 10);
+        JSlider volumeSlider = new JSlider(0, 20, 10);
         volumeSlider.setMajorTickSpacing(5);
         volumeSlider.setPaintTicks(true);
         volumeSlider.setPaintLabels(true);
@@ -112,11 +110,11 @@ public class Main {
         panel.add(Box.createVerticalStrut(10));
 
         // Music controls
-        musicPanel = new JPanel(new GridLayout(0, 1, 5, 5));
+        JPanel musicPanel = new JPanel(new GridLayout(0, 1, 5, 5));
         musicPanel.setBorder(BorderFactory.createTitledBorder("Music"));
-        musicPanel.add(createButton("Play", e -> playMusic()));
-        musicPanel.add(createButton("Pause", e -> pauseMusic()));
-        musicPanel.add(createButton("Fade Out", e -> fadeOutMusic()));
+        musicPanel.add(createButton("Play", _ -> playMusic()));
+        musicPanel.add(createButton("Pause", _ -> pauseMusic()));
+        musicPanel.add(createButton("Fade Out", _ -> fadeOutMusic()));
         panel.add(musicPanel);
         panel.add(Box.createVerticalStrut(10));
 
@@ -162,7 +160,7 @@ public class Main {
         // Rebuild SFX buttons
         sfxPanel.removeAll();
         for (String cue : parsed.getSfxCues()) {
-            sfxPanel.add(createButton(cue, e -> playSfx(cue)));
+            sfxPanel.add(createButton(cue, _ -> playSfx(cue)));
         }
         sfxPanel.revalidate();
 

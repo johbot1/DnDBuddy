@@ -9,9 +9,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ScriptParser {
-    // Matches: ACT 1 SCENE 2 – Arrival...
-    private static final Pattern HEADER_PATTERN =
-            Pattern.compile("^ACT\\s+(\\d+)\\s+SCENE\\s+(\\d+)\\s+[-–]\\s+(.+)$");
     // <<MUSIC: filename.mp3>>
     private static final Pattern MUSIC_PATTERN =
             Pattern.compile("<<MUSIC:\\s*([^>]+)>>");
@@ -33,7 +30,6 @@ public class ScriptParser {
         StringBuilder cleaned     = new StringBuilder();
 
         // Begin Parsing
-        boolean headerFound = false;
         for (String raw : lines) {
             String line = raw;
 
@@ -67,7 +63,7 @@ public class ScriptParser {
 
             // 3) Extract SFX tags
             Matcher sm = SFX_PATTERN.matcher(line);
-            StringBuffer sbSfx = new StringBuffer();
+            StringBuilder sbSfx = new StringBuilder();
             while (sm.find()) {
                 sfxCues.add(sm.group(1).trim());
                 sm.appendReplacement(sbSfx, "");
@@ -77,7 +73,7 @@ public class ScriptParser {
 
             // 4) Extract clickable terms and remove ALL braces
             Matcher tm = TERM_PATTERN.matcher(line);
-            StringBuffer sbClick = new StringBuffer();
+            StringBuilder sbClick = new StringBuilder();
             while (tm.find()) {
                 String term = tm.group(1).trim();
                 clickableTerms.add(term);          // add to set (duplicates ignored)
