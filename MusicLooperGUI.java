@@ -15,16 +15,14 @@ import java.util.logging.Logger;
  */
 public class MusicLooperGUI {
 
+    // A logger for logging messages for this class
+    private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
     private JFrame frmFoundation;
     private JLabel lblStatusLabel;
-    private JLabel  lblStartTime;
+    private JLabel lblStartTime;
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
     private JButton btnPlay, btnPause, btnStop, btnLoad;
-
-    // A logger for logging messages for this class
-    private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
-
     //A storage area for loaded audio data
     private Clip clpAudioClip;
     // Timer for updating timeline slider
@@ -60,25 +58,25 @@ public class MusicLooperGUI {
      * Initializes the main frame and all its UI components.
      */
     private void initUI() {
-        // 1. Create the main window (JFrame)
+        // Create the main window (JFrame)
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
         frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frmFoundation.setLayout(new BorderLayout(10, 10)); // Use BorderLayout for overall structure
+        frmFoundation.setLayout(new BorderLayout(10, 10));
 
-        // 2. Add all the panels to the frame
+        // Add all the panels to the frame
         frmFoundation.add(createTopPanel(), BorderLayout.NORTH);
         frmFoundation.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
 
         lblStatusLabel = new JLabel("Load an audio file to begin");
         lblStatusLabel.add(createTopPanel(), BorderLayout.NORTH);
-        lblStatusLabel.setBorder(new EmptyBorder(10,10,10,10));
+        lblStatusLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
         frmFoundation.add(lblStatusLabel, BorderLayout.CENTER);
 
         // Initial state for controls
         setPlaybackButtonsEnabled(false);
 
-        // Intialize the Timer
+        // Initialize the Timer
         setupTimer();
 
         // Size the window and make it visible
@@ -167,7 +165,7 @@ public class MusicLooperGUI {
         lblEndTime = new JLabel("0:00"); // Placeholder duration
 
         // The slider to represent the song's progress
-        // We'll set the min/max values dynamically when a song is loaded.
+        // Set the min/max values dynamically when a song is loaded.
         sldrTimelineSlider = new JSlider(0, 244); // 4 minutes * 60 + 4 seconds = 244
         sldrTimelineSlider.setValue(0);
 
@@ -195,19 +193,19 @@ public class MusicLooperGUI {
      * Opens a JFileChooser dialog to allow user to select an Audio File
      * For now, once selected, it'll just print to the console
      */
-    private void loadAudioFile(){
+    private void loadAudioFile() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Audio File (.mp3, .wav, etc)");
         //Filter for common audio types
-        fileChooser.setFileFilter(new FileNameExtensionFilter("Audio Files", "wav", "mp3","au"));
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Audio Files", "wav", "mp3", "au"));
 
         int usrSelection = fileChooser.showOpenDialog(frmFoundation);
 
-        if (usrSelection == JFileChooser.APPROVE_OPTION){
+        if (usrSelection == JFileChooser.APPROVE_OPTION) {
             File selectedFile = fileChooser.getSelectedFile();
-            try{
+            try {
                 //If a clip is already opened, close it to free resources
-                if (clpAudioClip != null && clpAudioClip.isOpen()){
+                if (clpAudioClip != null && clpAudioClip.isOpen()) {
                     clpAudioClip.close();
                 }
 
@@ -223,7 +221,7 @@ public class MusicLooperGUI {
                 setPlaybackButtonsEnabled(true);
 
                 LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", selectedFile.getAbsolutePath());
-            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e){
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
                 LOGGER.log(Level.SEVERE, "Error loading audio file", e);
                 JOptionPane.showMessageDialog(frmFoundation,
                         "Could not load the audio file: " + e.getMessage(),
@@ -231,7 +229,6 @@ public class MusicLooperGUI {
                         JOptionPane.ERROR_MESSAGE);
                 setPlaybackButtonsEnabled(false);
             }
-
 
 
             System.out.println("Selected File: " + selectedFile.getAbsolutePath());
@@ -242,8 +239,8 @@ public class MusicLooperGUI {
     /**
      * Starts playback of currently loaded audio clip
      */
-    private void playAudio(){
-        if (clpAudioClip != null){
+    private void playAudio() {
+        if (clpAudioClip != null) {
             clpAudioClip.start();
             tmrTimeline.start();
             LOGGER.info("Playback BEGIN");
@@ -253,8 +250,8 @@ public class MusicLooperGUI {
     /**
      * Pauses currently loaded audio clip
      */
-    private void pauseAudio(){
-        if (clpAudioClip != null && clpAudioClip.isRunning()){
+    private void pauseAudio() {
+        if (clpAudioClip != null && clpAudioClip.isRunning()) {
             clpAudioClip.stop();
             tmrTimeline.stop();
             LOGGER.info("Playback PAUSED");
@@ -264,7 +261,7 @@ public class MusicLooperGUI {
     /**
      * Stops currently loaded audio clip
      */
-    private void stopAudio(){
+    private void stopAudio() {
         if (clpAudioClip != null) {
             // Stop the clip first
             clpAudioClip.stop();
@@ -282,9 +279,10 @@ public class MusicLooperGUI {
 
     /**
      * Enables or disables the playback control buttons
+     *
      * @param enabled true to enable, false to disable
      */
-    private void setPlaybackButtonsEnabled(boolean enabled){
+    private void setPlaybackButtonsEnabled(boolean enabled) {
         btnPlay.setEnabled(enabled);
         btnPause.setEnabled(enabled);
         btnStop.setEnabled(enabled);
@@ -292,12 +290,13 @@ public class MusicLooperGUI {
 
     /**
      * Formats a duration in total seconds to a MM:SS string
+     *
      * @param totalSeconds The duration in Seconds
      * @return A properly formatted string
      */
-    private String formatTime(long totalSeconds){
+    private String formatTime(long totalSeconds) {
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
-        return String.format("%02d:%02d", minutes,seconds);
+        return String.format("%02d:%02d", minutes, seconds);
     }
 }
