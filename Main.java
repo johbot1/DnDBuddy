@@ -15,9 +15,7 @@ import java.util.Set;
  */
 public class Main {
     private JFrame frame;
-    private LinkTextPane scriptViewer;
-    private JLabel sceneLabel;
-    private JPanel sfxPanel;
+
 
     /**
      * Entry point; initializes the Swing UI.
@@ -40,61 +38,12 @@ public class Main {
         frame.setSize(1000, 800);
         frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
-
-
-        // Controls side panel
-        frame.add(createControlsPane(), BorderLayout.EAST);
-
-        // Load default script
-        Path scriptPath = Paths.get("resources/scripts/act1_scene1.txt");
-        loadScript(scriptPath);
-
         frame.setVisible(true);
     }
 
 
-    /**
-     * Builds the side panel containing scene info, volume slider,
-     * music buttons, and placeholders for SFX buttons.
-     *
-     * @return a JPanel with all controls assembled
-     */
-    private JPanel createControlsPane() {
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
 
-        // Scene label
-        sceneLabel = new JLabel("Loading...");
-        sceneLabel.setFont(sceneLabel.getFont().deriveFont(Font.BOLD, 14f));
-        panel.add(sceneLabel);
-        panel.add(Box.createVerticalStrut(10));
 
-        // Volume control
-        panel.add(new JLabel("Volume"));
-        JSlider volumeSlider = new JSlider(0, 20, 10);
-        volumeSlider.setMajorTickSpacing(5);
-        volumeSlider.setPaintTicks(true);
-        volumeSlider.setPaintLabels(true);
-        panel.add(volumeSlider);
-        panel.add(Box.createVerticalStrut(10));
-
-        // Music controls
-        JPanel musicPanel = new JPanel(new GridLayout(0, 1, 5, 5));
-        musicPanel.setBorder(BorderFactory.createTitledBorder("Music"));
-        musicPanel.add(createButton("Play", _ -> playMusic()));
-        musicPanel.add(createButton("Pause", _ -> pauseMusic()));
-        musicPanel.add(createButton("Fade Out", _ -> fadeOutMusic()));
-        panel.add(musicPanel);
-        panel.add(Box.createVerticalStrut(10));
-
-        // SFX placeholder panel
-        sfxPanel = new JPanel(new GridLayout(0, 1, 5, 5));
-        sfxPanel.setBorder(BorderFactory.createTitledBorder("SFX"));
-        panel.add(sfxPanel);
-
-        return panel;
-    }
 
     /**
      * Helper to create a JButton with provided label and action listener.
@@ -109,90 +58,6 @@ public class Main {
         return btn;
     }
 
-    /**
-     * Parses the script file, updates UI components, and populates SFX buttons.
-     *
-     * @param scriptPath path to the script file
-     * @throws IOException if parsing or file reading fails
-     */
-    private void loadScript(Path scriptPath) throws IOException, BadLocationException {
-        var parsed = ScriptParser.parse(scriptPath);
-
-        // Update scene heading
-        sceneLabel.setText(String.format("Act %s, Scene %s – %s",
-                parsed.getAct(), parsed.getScene(), parsed.getTitle()));
-
-        // Load background music if available
-        if (parsed.getMusicFile() != null) {
-            loadMusic(parsed.getMusicFile());
-        }
-
-        // Rebuild SFX buttons
-        sfxPanel.removeAll();
-        for (String cue : parsed.getSfxCues()) {
-            sfxPanel.add(createButton(cue, _ -> playSfx(cue)));
-        }
-        sfxPanel.revalidate();
-
-
-    }
-
-    /**
-     * Verifies the presence of a character sheet file.
-     *
-     * @param path path to the sheet file
-     */
-    private void validateSheetPath(Path path) {
-        if (!Files.exists(path)) {
-            System.err.println("Sheet not found: " + path);
-        }
-    }
-
-    /**
-     * Styles specified clickables as clickable links and registers click handler
-     * to display character sheets.
-     *
-     * @param pane  text pane containing script
-     * @param clickables set of clickables to highlight
-     *  //TODO: Fix [braces] not turning RED!
-     */
-    private void styleClickableTerms(JTextPane pane, Set<String> clickables, Set<String> musicCues) {
-        StyledDocument doc = pane.getStyledDocument();
-
-        // Blue for {braces}
-        Style linkStyle = doc.addStyle("link", null);
-        StyleConstants.setForeground(linkStyle, Color.BLUE);
-        StyleConstants.setUnderline(linkStyle, true);
-
-        // Red for [Brackets]
-        Style musicStyle = doc.addStyle("music", null);
-        StyleConstants.setForeground(musicStyle, Color.RED);
-
-        String text = pane.getText();
-
-        // 1) Style all normal brace clickables (e.g {term})
-        for (String term : clickables) {
-            String placeholder = "{" + term + "}";
-            int idx = 0;
-            while ((idx = text.indexOf(term, idx)) >= 0) {
-                doc.setCharacterAttributes(idx, placeholder.length(), linkStyle, false);
-                idx += term.length();
-            }
-        }
-
-        // 2) Style all music cues (e.g [cue])
-        for (String cue : musicCues) {
-            String placeholder = "[" + cue + "]";
-            int idx = 0;
-            while ((idx = text.indexOf(placeholder, idx)) >= 0) {
-                doc.setCharacterAttributes(idx,
-                        placeholder.length(),
-                        musicStyle,
-                        false);
-                idx += placeholder.length();
-            }
-        }
-    }
 
 
     // Media control stubs – replace with real audio handling as needed
