@@ -1,8 +1,10 @@
+import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
+import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,8 +21,14 @@ public class MusicLooperGUI {
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
     private JButton btnPlay, btnPause, btnStop, btnLoad;
+
     // A logger for logging messages for this class
     private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
+
+    //A storage area for loaded audio data
+    private Clip clpAudioClip;
+    // Timer for updating timeline slider
+    private Timer tmrTimeline;
 
     /**
      * The main entry point for the application.
@@ -61,14 +69,19 @@ public class MusicLooperGUI {
         frmFoundation.add(createTopPanel(), BorderLayout.NORTH);
         frmFoundation.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
-        // A placeholder in the center. You could put song info or album art here later.
+
         lblStatusLabel = new JLabel("Load an audio file to begin");
         lblStatusLabel.add(createTopPanel(), BorderLayout.NORTH);
         lblStatusLabel.setBorder(new EmptyBorder(10,10,10,10));
         frmFoundation.add(lblStatusLabel, BorderLayout.CENTER);
 
+        // Initial state for controls
+        setPlaybackButtonsEnabled(false);
 
-        // 3. Size the window and make it visible
+        // Intialize the Timer
+        setupTimer();
+
+        // Size the window and make it visible
         frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
         frmFoundation.setMinimumSize(frmFoundation.getSize()); // Prevent resizing smaller than packed size
         frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
@@ -122,6 +135,11 @@ public class MusicLooperGUI {
         btnPause = new JButton("Pause");
         btnStop = new JButton("Stop");
 
+        //Add Action Listeners
+        btnPlay.addActionListener(e -> playAudio());
+        btnPause.addActionListener(e -> pauseAudio());
+        btnStop.addActionListener(e -> stopAudio());
+
         // Set preferred sizes to make buttons uniform
         Dimension buttonSize = new Dimension(80, 30);
         btnPlay.setPreferredSize(buttonSize);
@@ -161,6 +179,19 @@ public class MusicLooperGUI {
     }
 
     /**
+     * Sets up the Swing Timer to update the GUI every second during playback.
+     */
+    private void setupTimer() {
+        tmrTimeline = new Timer(1000, e -> {
+            if (clpAudioClip != null && clpAudioClip.isRunning()) {
+                long currentSeconds = clpAudioClip.getMicrosecondPosition() / 1_000_000;
+                sldrTimelineSlider.setValue((int) currentSeconds);
+                lblStartTime.setText(formatTime(currentSeconds));
+            }
+        });
+    }
+
+    /**
      * Opens a JFileChooser dialog to allow user to select an Audio File
      * For now, once selected, it'll just print to the console
      */
@@ -174,8 +205,99 @@ public class MusicLooperGUI {
 
         if (usrSelection == JFileChooser.APPROVE_OPTION){
             File selectedFile = fileChooser.getSelectedFile();
+            try{
+                //If a clip is already opened, close it to free resources
+                if (clpAudioClip != null && clpAudioClip.isOpen()){
+                    clpAudioClip.close();
+                }
+
+                AudioInputStream strmAudioStream = AudioSystem.getAudioInputStream(selectedFile);
+                clpAudioClip = AudioSystem.getClip();
+                clpAudioClip.open(strmAudioStream);
+
+                // Update GUI with new audio file info
+                lblStatusLabel.setText("Loaded: " + selectedFile.getName());
+                long durationSeconds = clpAudioClip.getMicrosecondLength() / 1_000_000;
+                sldrTimelineSlider.setMaximum((int) durationSeconds);
+                lblEndTime.setText(formatTime(durationSeconds));
+                setPlaybackButtonsEnabled(true);
+
+                LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", selectedFile.getAbsolutePath());
+            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e){
+                LOGGER.log(Level.SEVERE, "Error loading audio file", e);
+                JOptionPane.showMessageDialog(frmFoundation,
+                        "Could not load the audio file: " + e.getMessage(),
+                        "Audio Load Error",
+                        JOptionPane.ERROR_MESSAGE);
+                setPlaybackButtonsEnabled(false);
+            }
+
+
+
             System.out.println("Selected File: " + selectedFile.getAbsolutePath());
             lblStatusLabel.setText("Loaded: " + selectedFile.getName());
         }
+    }
+
+    /**
+     * Starts playback of currently loaded audio clip
+     */
+    private void playAudio(){
+        if (clpAudioClip != null){
+            clpAudioClip.start();
+            tmrTimeline.start();
+            LOGGER.info("Playback BEGIN");
+        }
+    }
+
+    /**
+     * Pauses currently loaded audio clip
+     */
+    private void pauseAudio(){
+        if (clpAudioClip != null && clpAudioClip.isRunning()){
+            clpAudioClip.stop();
+            tmrTimeline.stop();
+            LOGGER.info("Playback PAUSED");
+        }
+    }
+
+    /**
+     * Stops currently loaded audio clip
+     */
+    private void stopAudio(){
+        if (clpAudioClip != null) {
+            // Stop the clip first
+            clpAudioClip.stop();
+            // Reset its position to the beginning
+            clpAudioClip.setFramePosition(0);
+            // Stop the timer that updates the slider
+            tmrTimeline.stop();
+            // Reset the slider and time label to the start
+            sldrTimelineSlider.setValue(0);
+            lblStartTime.setText("0:00");
+            btnPlay.setText("Play");
+            LOGGER.info("Playback stopped and reset.");
+        }
+    }
+
+    /**
+     * Enables or disables the playback control buttons
+     * @param enabled true to enable, false to disable
+     */
+    private void setPlaybackButtonsEnabled(boolean enabled){
+        btnPlay.setEnabled(enabled);
+        btnPause.setEnabled(enabled);
+        btnStop.setEnabled(enabled);
+    }
+
+    /**
+     * Formats a duration in total seconds to a MM:SS string
+     * @param totalSeconds The duration in Seconds
+     * @return A properly formatted string
+     */
+    private String formatTime(long totalSeconds){
+        long minutes = totalSeconds / 60;
+        long seconds = totalSeconds % 60;
+        return String.format("%02d:%02d", minutes,seconds);
     }
 }
