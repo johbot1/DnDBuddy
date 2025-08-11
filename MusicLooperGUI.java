@@ -361,6 +361,9 @@ public class MusicLooperGUI {
             sldrTimelineSlider.setValue(0);
             lblStartTime.setText("0:00");
             btnPlay.setText("Play");
+            // Reset the Loop state
+            chkEnableLoop.setSelected(false);
+            //loopRepetitionRemaining = 0;
             LOGGER.info("Playback stopped and reset.");
         }
     }
@@ -386,8 +389,38 @@ public class MusicLooperGUI {
         txtLoopCount.setEnabled(enabled);
         btnSetLoopStart.setEnabled(enabled);
         btnSetLoopEnd.setEnabled(enabled);
+        chkEnableLoop.setEnabled(enabled);
     }
 
+    /**
+     * Sets the text of a target field to the current time on the timeline
+     * @param targetField The JTextField to target
+     */
+    private void setLoopPoint(JTextField targetField){
+        if (clpAudioClip != null){
+            long currnetTimeSeconds = sldrTimelineSlider.getValue();
+            targetField.setText(formatTime(currnetTimeSeconds));
+        }
+    }
+
+    /**
+     * Parses a time string (MM:SS) into total seconds
+     * @param timeString The String to parse
+     * @return The total number of seconds
+     */
+    private long parseTime(String timeString){
+        try{
+            String[] parts = timeString.split(":");
+            if (parts.length == 2){
+                long minutes = Long.parseLong(parts[0]);
+                long seconds = Long.parseLong(parts[1]);
+                return (minutes * 60) + seconds;
+            }
+        } catch (NumberFormatException e){
+            LOGGER.log(Level.WARNING, "Invalid Time Format: " + timeString,e);
+        }
+        return 0; // If parsing fails, return 0 as the default
+    }
 
     /**
      * Formats a duration in total seconds to a MM:SS string
