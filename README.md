@@ -7,7 +7,7 @@ These DnD buddies will have very specific purposes:
 - ### Groove Buddy:
   - Will be able to load in an MP3 file, set time stamps, and be able to dynamically loop/play music
   - (Stretch Goal: Have a way to save configuration files to better allow for easier load-in)
-- ### Buddy Watson:
+- ### Puzzle Buddy:
   - Able to show a simplistic view of a puzzle, and allow for realtime interactions for players
     - (First puzzle: Chromatic Cypher a la Resident Evil 4 Church Puzzle)
 
