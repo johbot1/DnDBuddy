@@ -329,6 +329,15 @@ public class MusicLooperGUI {
      */
     private void playAudio() {
         if (clpAudioClip != null) {
+            // If loop is enabled, start the repeat counter
+            if (chkEnableLoop.isSelected()){
+                try{
+                //TODO: BEGIN HERE!
+                } catch (NumberFormatException r){
+                    LOGGER.log(Level.WARNING, "Invalid Repeat count. Defaulting to 1");
+
+                }
+            }
             clpAudioClip.start();
             tmrTimeline.start();
             btnPlay.setText("Resume");
