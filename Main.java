@@ -234,23 +234,6 @@ public class Main {
     }
 
 
-    /**
-     * Reads and displays the character sheet in a dialog.
-     *
-     * @param name character name matching the sheet file
-     */
-    private void showCharacterSheet(String name) {
-        Path sheetPath = Paths.get("resources/sheets", name + ".txt");
-        validateSheetPath(sheetPath);
-        String content;
-        try {
-            content = Files.readString(sheetPath);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        JOptionPane.showMessageDialog(frame, content, name, JOptionPane.PLAIN_MESSAGE);
-    }
-
     // Media control stubs – replace with real audio handling as needed
     /** Stub: load music file for playback. */
     private void loadMusic(String file) { System.out.println("Load music: " + file); }

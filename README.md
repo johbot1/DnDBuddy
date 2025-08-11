@@ -2,14 +2,14 @@
 A helpful companion for DMing games!
 
 # What is this?
-I want to host my own One Shot, but found that organization of ideas was 
-difficult. Enter DnDBuddy! This app will eventually be able to:
-- Read in a text file such as notes or a script and display them in a GUI
-  - Allow for Hover behavior to peek at specified notes in the provided text
-  - Quick access to all other notes across your campaign are merely a click away!
-- Allow you to set specific music and sound effects for a particular scene
-  - Includes fade ins, fade outs, and volume controls
-- Keep track of Initiative, turn order, health, and more all from a single interface
+I want to host my own One Shot, but found that there were things that would be best made myself. Enter: DnD Buddies!
+These DnD buddies will have very specific purposes:
+- ### Groove Buddy:
+  - Will be able to load in an MP3 file, set time stamps, and be able to dynamically loop/play music
+  - (Stretch Goal: Have a way to save configuration files to better allow for easier load-in)
+- ### Buddy Watson:
+  - Able to show a simplistic view of a puzzle, and allow for realtime interactions for players
+    - (First puzzle: Chromatic Cypher a la Resident Evil 4 Church Puzzle)
 
 # Requirements:
 ### Ant Requirement:
