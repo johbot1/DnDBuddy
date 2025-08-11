@@ -23,6 +23,13 @@ public class MusicLooperGUI {
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
     private JButton btnPlay, btnPause, btnStop, btnLoad;
+
+    // -- Loop Control Components --
+    private JTextField txtLoopStart, txtLoopEnd, txtLoopCount;
+    private JButton btnSetLoopStart, btnSetLoopEnd;
+    private JCheckBox chkEnableLoop;
+
+
     //A storage area for loaded audio data
     private Clip clpAudioClip;
     // Timer for updating timeline slider
@@ -65,16 +72,17 @@ public class MusicLooperGUI {
 
         // Add all the panels to the frame
         frmFoundation.add(createTopPanel(), BorderLayout.NORTH);
+        frmFoundation.add(createLoopControlsPanel(), BorderLayout.CENTER);
         frmFoundation.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
 
         lblStatusLabel = new JLabel("Load an audio file to begin");
         lblStatusLabel.add(createTopPanel(), BorderLayout.NORTH);
         lblStatusLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        frmFoundation.add(lblStatusLabel, BorderLayout.CENTER);
 
         // Initial state for controls
         setPlaybackButtonsEnabled(false);
+        setLoopControlsEnabled(false);
 
         // Initialize the Timer
         setupTimer();
@@ -100,6 +108,69 @@ public class MusicLooperGUI {
         pnlTopPanel.add(btnLoad);
 
         return pnlTopPanel;
+    }
+
+    /**
+     * Creates the Central Panel for loop settings
+     * @return A JPanel containing all loop control components
+     */
+    private JPanel createLoopControlsPanel(){
+        JPanel panel = new JPanel(new GridBagLayout());
+        panel.setBorder(BorderFactory.createTitledBorder("Loop Settings"));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5,5,5,5);
+        gbc.anchor = GridBagConstraints.WEST;
+
+        // -- Row 0: Loop Start --
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Loop Start: "),gbc);
+
+        gbc.gridx = 1;
+        txtLoopStart = new JTextField("00:00", 5);
+        panel.add(txtLoopStart, gbc);
+
+        gbc.gridx = 2;
+        btnSetLoopStart = new JButton("Set");
+        panel.add(btnSetLoopStart, gbc);
+
+        // -- Row 1: Loop End --
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Loop End:"), gbc);
+
+        gbc.gridx = 1;
+        txtLoopEnd = new JTextField("00:00", 5);
+        panel.add(txtLoopEnd, gbc);
+
+        gbc.gridx = 2;
+        btnSetLoopEnd = new JButton("Set");
+        panel.add(btnSetLoopEnd, gbc);
+
+        // -- Row 2: Repetitions --
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        panel.add(new JLabel("Repetitions:"), gbc);
+
+        gbc.gridx = 1;
+        txtLoopCount = new JTextField("1", 3);
+        panel.add(txtLoopCount, gbc);
+
+        // -- Row 3: Repetitions --
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 3; // Span across all columns
+        chkEnableLoop = new JCheckBox("Enable Loop");
+        panel.add(chkEnableLoop, gbc);
+
+        // -- Row 4: Status Label--
+        gbc.gridy = 4;
+        gbc.gridwidth = 3;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        lblStatusLabel = new JLabel("Load an audio file to begin.", SwingConstants.CENTER);
+        panel.add(lblStatusLabel, gbc);
+
+        return panel;
     }
 
     /**
@@ -196,7 +267,7 @@ public class MusicLooperGUI {
     private void loadAudioFile() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Select an Audio File (.mp3, .wav, etc)");
-        //Filter for common audio types
+        //Filter for common audio types [STANDARD JAVA ONLY SUPPORT .wav / .au OUT OF THE BOX]
         fileChooser.setFileFilter(new FileNameExtensionFilter("Audio Files", "wav", "mp3", "au"));
 
         int usrSelection = fileChooser.showOpenDialog(frmFoundation);
@@ -211,14 +282,29 @@ public class MusicLooperGUI {
 
                 AudioInputStream strmAudioStream = AudioSystem.getAudioInputStream(selectedFile);
                 clpAudioClip = AudioSystem.getClip();
+
+                // Adds a listener to handle events like STOP (when a song ends)
+                clpAudioClip.addLineListener(event -> {
+                    if (event.getType() == LineEvent.Type.STOP){
+                        // When naturally finishing, stop the timer and reset UI
+                        if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()){
+                            stopAudio();
+                        }
+                    }
+                });
+
                 clpAudioClip.open(strmAudioStream);
 
                 // Update GUI with new audio file info
                 lblStatusLabel.setText("Loaded: " + selectedFile.getName());
                 long durationSeconds = clpAudioClip.getMicrosecondLength() / 1_000_000;
                 sldrTimelineSlider.setMaximum((int) durationSeconds);
+                sldrTimelineSlider.setValue(0);
+                lblStartTime.setText("0:00");
                 lblEndTime.setText(formatTime(durationSeconds));
                 setPlaybackButtonsEnabled(true);
+                setLoopControlsEnabled(true);
+                btnPlay.setText("Play");
 
                 LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", selectedFile.getAbsolutePath());
             } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
@@ -228,6 +314,7 @@ public class MusicLooperGUI {
                         "Audio Load Error",
                         JOptionPane.ERROR_MESSAGE);
                 setPlaybackButtonsEnabled(false);
+                setLoopControlsEnabled(false);
             }
 
 
@@ -243,6 +330,7 @@ public class MusicLooperGUI {
         if (clpAudioClip != null) {
             clpAudioClip.start();
             tmrTimeline.start();
+            btnPlay.setText("Resume");
             LOGGER.info("Playback BEGIN");
         }
     }
@@ -287,6 +375,19 @@ public class MusicLooperGUI {
         btnPause.setEnabled(enabled);
         btnStop.setEnabled(enabled);
     }
+
+    /**
+     * Enables or disables the loop control buttons
+     * @param enabled true to enable, false to disable
+     */
+    private void setLoopControlsEnabled(boolean enabled){
+        txtLoopStart.setEnabled(enabled);
+        txtLoopEnd.setEnabled(enabled);
+        txtLoopCount.setEnabled(enabled);
+        btnSetLoopStart.setEnabled(enabled);
+        btnSetLoopEnd.setEnabled(enabled);
+    }
+
 
     /**
      * Formats a duration in total seconds to a MM:SS string
