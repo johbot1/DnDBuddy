@@ -1,6 +1,10 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * MusicLooperGUI sets up the main graphical user interface for the music looper application.
@@ -9,11 +13,19 @@ import java.awt.*;
  */
 public class MusicLooperGUI {
 
-    private JFrame frame;
+    private JFrame frmFoundation;
+    private JLabel lblStatusLabel;
+    private JLabel  lblStartTime;
+    private JLabel lblEndTime;
+    private JSlider sldrTimelineSlider;
+    private JButton btnPlay, btnPause, btnStop, btnLoad;
+    // A logger for logging messages for this class
+    private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
 
     /**
      * The main entry point for the application.
      * It schedules the GUI creation on the Event Dispatch Thread.
+     *
      * @param args Command-line arguments (not used).
      */
     public static void main(String[] args) {
@@ -25,7 +37,13 @@ public class MusicLooperGUI {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 new MusicLooperGUI().initUI();
             } catch (Exception e) {
-                e.printStackTrace();
+                // Log the exception with a severe level and show a user-friendly error dialog.
+                LOGGER.log(Level.SEVERE, "An unexpected error occurred during GUI initialization.", e);
+                JOptionPane.showMessageDialog(null,
+                        "A critical error occurred and the application cannot start.\n" +
+                                "Please check the logs for more details.",
+                        "Application Startup Error",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
     }
@@ -35,106 +53,129 @@ public class MusicLooperGUI {
      */
     private void initUI() {
         // 1. Create the main window (JFrame)
-        frame = new JFrame("Groove Buddy - Music Looper");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setLayout(new BorderLayout(10, 10)); // Use BorderLayout for overall structure
+        frmFoundation = new JFrame("Groove Buddy - Music Looper");
+        frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frmFoundation.setLayout(new BorderLayout(10, 10)); // Use BorderLayout for overall structure
 
         // 2. Add all the panels to the frame
-        frame.add(createTopPanel(), BorderLayout.NORTH);
-        frame.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
+        frmFoundation.add(createTopPanel(), BorderLayout.NORTH);
+        frmFoundation.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
         // A placeholder in the center. You could put song info or album art here later.
-        JPanel centerPanel = new JPanel();
-        centerPanel.setBorder(new EmptyBorder(10,10,10,10));
-        centerPanel.add(new JLabel("Load an audio file to begin."));
-        frame.add(centerPanel, BorderLayout.CENTER);
+        lblStatusLabel = new JLabel("Load an audio file to begin");
+        lblStatusLabel.add(createTopPanel(), BorderLayout.NORTH);
+        lblStatusLabel.setBorder(new EmptyBorder(10,10,10,10));
+        frmFoundation.add(lblStatusLabel, BorderLayout.CENTER);
 
 
         // 3. Size the window and make it visible
-        frame.pack(); // Sizes the window to fit the preferred size of its subcomponents
-        frame.setMinimumSize(frame.getSize()); // Prevent resizing smaller than packed size
-        frame.setLocationRelativeTo(null); // Center the window on the screen
-        frame.setVisible(true);
+        frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
+        frmFoundation.setMinimumSize(frmFoundation.getSize()); // Prevent resizing smaller than packed size
+        frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
+        frmFoundation.setVisible(true);
     }
 
     /**
      * Creates the top panel which contains the file loading controls.
+     *
      * @return A JPanel containing the load/unload button.
      */
     private JPanel createTopPanel() {
-        JPanel topPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topPanel.setBorder(new EmptyBorder(5, 5, 0, 5)); // Add some padding
+        JPanel pnlTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        pnlTopPanel.setBorder(new EmptyBorder(5, 5, 0, 5)); // Add some padding
 
-        JButton loadButton = new JButton("Load Audio File");
-        // We will add an ActionListener here later to open a file chooser.
-        topPanel.add(loadButton);
+        btnLoad = new JButton("Load Audio File");
+        btnLoad.addActionListener(e -> loadAudioFile());
+        pnlTopPanel.add(btnLoad);
 
-        return topPanel;
+        return pnlTopPanel;
     }
 
     /**
      * Creates the main panel for all playback controls, including the timeline and buttons.
      * This panel will be placed at the bottom of the window.
+     *
      * @return A JPanel containing the timeline and playback buttons.
      */
     private JPanel createPlaybackControlsPanel() {
         // Main container for all controls at the bottom
-        JPanel controlsContainer = new JPanel(new BorderLayout());
-        controlsContainer.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JPanel pnlControlContainer = new JPanel(new BorderLayout());
+        pnlControlContainer.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Add the timeline and the buttons to this container
-        controlsContainer.add(createTimelinePanel(), BorderLayout.NORTH);
-        controlsContainer.add(createButtonPanel(), BorderLayout.CENTER);
+        pnlControlContainer.add(createTimelinePanel(), BorderLayout.NORTH);
+        pnlControlContainer.add(createButtonPanel(), BorderLayout.CENTER);
 
-        return controlsContainer;
+        return pnlControlContainer;
     }
 
     /**
      * Creates the panel containing the Play, Pause, and Stop buttons.
+     *
      * @return A JPanel with the playback action buttons.
      */
     private JPanel createButtonPanel() {
         // Panel for the buttons, using FlowLayout to center them
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
 
-        JButton playButton = new JButton("Play");
-        JButton pauseButton = new JButton("Pause");
-        JButton stopButton = new JButton("Stop");
+        btnPlay = new JButton("Play");
+        btnPause = new JButton("Pause");
+        btnStop = new JButton("Stop");
 
         // Set preferred sizes to make buttons uniform
         Dimension buttonSize = new Dimension(80, 30);
-        playButton.setPreferredSize(buttonSize);
-        pauseButton.setPreferredSize(buttonSize);
-        stopButton.setPreferredSize(buttonSize);
+        btnPlay.setPreferredSize(buttonSize);
+        btnPause.setPreferredSize(buttonSize);
+        btnStop.setPreferredSize(buttonSize);
 
-        buttonPanel.add(playButton);
-        buttonPanel.add(pauseButton);
-        buttonPanel.add(stopButton);
+        pnlButtonContainer.add(btnPlay);
+        pnlButtonContainer.add(btnPause);
+        pnlButtonContainer.add(btnStop);
 
-        return buttonPanel;
+        return pnlButtonContainer;
     }
 
     /**
      * Creates the panel for the audio timeline, including the slider and time labels.
+     *
      * @return A JPanel with the JSlider and time labels.
      */
     private JPanel createTimelinePanel() {
         // Panel for the timeline slider and labels
-        JPanel timelinePanel = new JPanel(new BorderLayout(10, 0));
+        JPanel pnlTimeline = new JPanel(new BorderLayout(10, 0));
 
         // Labels to show current time and total duration
-        JLabel startTimeLabel = new JLabel("0:00");
-        JLabel endTimeLabel = new JLabel("4:04"); // Placeholder duration
+        lblStartTime = new JLabel("0:00");
+        lblEndTime = new JLabel("0:00"); // Placeholder duration
 
         // The slider to represent the song's progress
         // We'll set the min/max values dynamically when a song is loaded.
-        JSlider timelineSlider = new JSlider(0, 244); // 4 minutes * 60 + 4 seconds = 244
-        timelineSlider.setValue(0);
+        sldrTimelineSlider = new JSlider(0, 244); // 4 minutes * 60 + 4 seconds = 244
+        sldrTimelineSlider.setValue(0);
 
-        timelinePanel.add(startTimeLabel, BorderLayout.WEST);
-        timelinePanel.add(timelineSlider, BorderLayout.CENTER);
-        timelinePanel.add(endTimeLabel, BorderLayout.EAST);
+        pnlTimeline.add(lblStartTime, BorderLayout.WEST);
+        pnlTimeline.add(sldrTimelineSlider, BorderLayout.CENTER);
+        pnlTimeline.add(lblEndTime, BorderLayout.EAST);
 
-        return timelinePanel;
+        return pnlTimeline;
+    }
+
+    /**
+     * Opens a JFileChooser dialog to allow user to select an Audio File
+     * For now, once selected, it'll just print to the console
+     */
+    private void loadAudioFile(){
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle("Select an Audio File (.mp3, .wav, etc)");
+        //Filter for common audio types
+        fileChooser.setFileFilter(new FileNameExtensionFilter("Audio Files", "wav", "mp3","au"));
+
+        int usrSelection = fileChooser.showOpenDialog(frmFoundation);
+
+        if (usrSelection == JFileChooser.APPROVE_OPTION){
+            File selectedFile = fileChooser.getSelectedFile();
+            System.out.println("Selected File: " + selectedFile.getAbsolutePath());
+            lblStatusLabel.setText("Loaded: " + selectedFile.getName());
+        }
     }
 }
