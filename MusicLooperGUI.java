@@ -35,6 +35,8 @@ public class MusicLooperGUI {
     private Clip clpAudioClip;
     // Timer for updating timeline slider
     private Timer tmrTimeline;
+    //Counter for repeats
+    private int intRepeatsRemaining;
 
     /**
      * The main entry point for the application.
@@ -254,9 +256,27 @@ public class MusicLooperGUI {
     private void setupTimer() {
         tmrTimeline = new Timer(1000, e -> {
             if (clpAudioClip != null && clpAudioClip.isRunning()) {
-                long currentSeconds = clpAudioClip.getMicrosecondPosition() / 1_000_000;
-                sldrTimelineSlider.setValue((int) currentSeconds);
-                lblStartTime.setText(formatTime(currentSeconds));
+                long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
+                sldrTimelineSlider.setValue((int) (currentMicroSeconds / 1_000_000));
+                lblStartTime.setText(formatTime(currentMicroSeconds));
+
+                // -- Core Looping Logic --
+                if (chkEnableLoop.isSelected()){
+                    long loopEndMicro = parseTime(txtLoopEnd.getText()) * 1_000_000;
+
+                    if (currentMicroSeconds >= loopEndMicro){
+                        if (intRepeatsRemaining >0){
+                          intRepeatsRemaining--;
+                          LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
+                          long loopStartMicro = parseTime(txtLoopStart.getText())*1_000_000;
+                          clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                        } else {
+                            // The loop has finished, let the song continue
+                            chkEnableLoop.setSelected(false);
+                            LOGGER.log(Level.INFO, "Looping has finished. Playback resuming AFTER this repeat");
+                        }
+                    }
+                }
             }
         });
     }
