@@ -41,47 +41,17 @@ public class Main {
         frame.setLocationRelativeTo(null);
         frame.setLayout(new BorderLayout());
 
-        // Script viewer pane
-        scriptViewer = createScriptViewer();
-        frame.add(new JScrollPane(scriptViewer), BorderLayout.CENTER);
 
         // Controls side panel
         frame.add(createControlsPane(), BorderLayout.EAST);
 
         // Load default script
         Path scriptPath = Paths.get("resources/scripts/act1_scene1.txt");
-        validateScriptPath(scriptPath);
         loadScript(scriptPath);
 
         frame.setVisible(true);
     }
 
-    /**
-     * Verifies the existence of the script file and exits on failure.
-     *
-     * @param path the path to the script file
-     */
-    private void validateScriptPath(Path path) {
-        if (!Files.exists(path)) {
-            JOptionPane.showMessageDialog(frame,
-                    "Script not found: " + path,
-                    "Error",
-                    JOptionPane.ERROR_MESSAGE);
-            System.exit(1);
-        }
-    }
-
-    /**
-     * Creates and configures the non-editable text pane for displaying scripts.
-     *
-     * @return a configured LinkTextPane instance
-     */
-    private LinkTextPane createScriptViewer() {
-        LinkTextPane pane = new LinkTextPane();
-        pane.setEditable(false);
-        pane.setMargin(new Insets(10, 10, 10, 10));
-        return pane;
-    }
 
     /**
      * Builds the side panel containing scene info, volume slider,
@@ -164,15 +134,6 @@ public class Main {
         }
         sfxPanel.revalidate();
 
-        // Display script text with clickable terms
-        scriptViewer.setText(parsed.getText());
-        Set<String> terms = parsed.getClickableTerms();
-        scriptViewer.setClickableTerms(terms);
-        styleClickableTerms(
-                scriptViewer,
-                parsed.getClickableTerms(),
-                parsed.getMusicCues()
-        );
 
     }
 
