@@ -5,7 +5,6 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.sql.Driver;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -115,19 +114,20 @@ public class MusicLooperGUI {
 
     /**
      * Creates the Central Panel for loop settings
+     *
      * @return A JPanel containing all loop control components
      */
-    private JPanel createLoopControlsPanel(){
+    private JPanel createLoopControlsPanel() {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Loop Settings"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5,5,5,5);
+        gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
         // -- Row 0: Loop Start --
         gbc.gridx = 0;
         gbc.gridy = 0;
-        panel.add(new JLabel("Loop Start: "),gbc);
+        panel.add(new JLabel("Loop Start: "), gbc);
 
         gbc.gridx = 1;
         txtLoopStart = new JTextField("00:00", 5);
@@ -264,15 +264,15 @@ public class MusicLooperGUI {
                 lblStartTime.setText(formatTime(currentSeconds));
 
                 // -- Core Looping Logic --
-                if (chkEnableLoop.isSelected()){
+                if (chkEnableLoop.isSelected()) {
                     long loopEndMicro = parseTime(txtLoopEnd.getText()) * 1_000_000;
 
-                    if (currentMicroSeconds >= loopEndMicro){
-                        if (intRepeatsRemaining >0){
-                          intRepeatsRemaining--;
-                          LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
-                          long loopStartMicro = parseTime(txtLoopStart.getText())*1_000_000;
-                          clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                    if (currentMicroSeconds >= loopEndMicro) {
+                        if (intRepeatsRemaining > 0) {
+                            intRepeatsRemaining--;
+                            LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
+                            long loopStartMicro = parseTime(txtLoopStart.getText()) * 1_000_000;
+                            clpAudioClip.setMicrosecondPosition(loopStartMicro);
                         } else {
                             // The loop has finished, let the song continue
                             chkEnableLoop.setSelected(false);
@@ -309,9 +309,9 @@ public class MusicLooperGUI {
 
                 // Adds a listener to handle events like STOP (when a song ends)
                 clpAudioClip.addLineListener(event -> {
-                    if (event.getType() == LineEvent.Type.STOP){
+                    if (event.getType() == LineEvent.Type.STOP) {
                         // When naturally finishing, stop the timer and reset UI
-                        if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()){
+                        if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
                             stopAudio();
                         }
                     }
@@ -353,11 +353,11 @@ public class MusicLooperGUI {
     private void playAudio() {
         if (clpAudioClip != null) {
             // If loop is enabled, start the repeat counter
-            if (chkEnableLoop.isSelected()){
-                try{
+            if (chkEnableLoop.isSelected()) {
+                try {
                     intRepeatsRemaining = Integer.parseInt(txtLoopCount.getText());
                     LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
-                } catch (NumberFormatException r){
+                } catch (NumberFormatException r) {
                     LOGGER.log(Level.WARNING, "Invalid Repeat count. Defaulting to 1");
                     intRepeatsRemaining = 1;
                     txtLoopCount.setText("1");
@@ -416,9 +416,10 @@ public class MusicLooperGUI {
 
     /**
      * Enables or disables the loop control buttons
+     *
      * @param enabled true to enable, false to disable
      */
-    private void setLoopControlsEnabled(boolean enabled){
+    private void setLoopControlsEnabled(boolean enabled) {
         txtLoopStart.setEnabled(enabled);
         txtLoopEnd.setEnabled(enabled);
         txtLoopCount.setEnabled(enabled);
@@ -429,10 +430,11 @@ public class MusicLooperGUI {
 
     /**
      * Sets the text of a target field to the current time on the timeline
+     *
      * @param targetField The JTextField to target
      */
-    private void setLoopPoint(JTextField targetField){
-        if (clpAudioClip != null){
+    private void setLoopPoint(JTextField targetField) {
+        if (clpAudioClip != null) {
             long currnetTimeSeconds = sldrTimelineSlider.getValue();
             targetField.setText(formatTime(currnetTimeSeconds));
         }
@@ -440,19 +442,20 @@ public class MusicLooperGUI {
 
     /**
      * Parses a time string (MM:SS) into total seconds
+     *
      * @param timeString The String to parse
      * @return The total number of seconds
      */
-    private long parseTime(String timeString){
-        try{
+    private long parseTime(String timeString) {
+        try {
             String[] parts = timeString.split(":");
-            if (parts.length == 2){
+            if (parts.length == 2) {
                 long minutes = Long.parseLong(parts[0]);
                 long seconds = Long.parseLong(parts[1]);
                 return (minutes * 60) + seconds;
             }
-        } catch (NumberFormatException e){
-            LOGGER.log(Level.WARNING, "Invalid Time Format: " + timeString,e);
+        } catch (NumberFormatException e) {
+            LOGGER.log(Level.WARNING, "Invalid Time Format: " + timeString, e);
         }
         return 0; // If parsing fails, return 0 as the default
     }
