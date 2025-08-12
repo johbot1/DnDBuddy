@@ -254,11 +254,14 @@ public class MusicLooperGUI {
      * Sets up the Swing Timer to update the GUI every second during playback.
      */
     private void setupTimer() {
-        tmrTimeline = new Timer(1000, e -> {
+        tmrTimeline = new Timer(50, e -> {
             if (clpAudioClip != null && clpAudioClip.isRunning()) {
                 long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
-                sldrTimelineSlider.setValue((int) (currentMicroSeconds / 1_000_000));
-                lblStartTime.setText(formatTime(currentMicroSeconds));
+
+                long currentSeconds = currentMicroSeconds / 1_000_000;
+
+                sldrTimelineSlider.setValue((int) currentSeconds);
+                lblStartTime.setText(formatTime(currentSeconds));
 
                 // -- Core Looping Logic --
                 if (chkEnableLoop.isSelected()){
@@ -273,7 +276,7 @@ public class MusicLooperGUI {
                         } else {
                             // The loop has finished, let the song continue
                             chkEnableLoop.setSelected(false);
-                            LOGGER.log(Level.INFO, "Looping has finished. Playback resuming AFTER this repeat");
+                            LOGGER.log(Level.INFO, "Looping has finished. Playing remainder of the song...");
                         }
                     }
                 }
@@ -352,10 +355,12 @@ public class MusicLooperGUI {
             // If loop is enabled, start the repeat counter
             if (chkEnableLoop.isSelected()){
                 try{
-                //TODO: BEGIN HERE!
+                    intRepeatsRemaining = Integer.parseInt(txtLoopCount.getText());
+                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
                 } catch (NumberFormatException r){
                     LOGGER.log(Level.WARNING, "Invalid Repeat count. Defaulting to 1");
-
+                    intRepeatsRemaining = 1;
+                    txtLoopCount.setText("1");
                 }
             }
             clpAudioClip.start();
