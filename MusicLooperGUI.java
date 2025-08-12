@@ -1,5 +1,6 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
@@ -17,12 +18,14 @@ public class MusicLooperGUI {
 
     // A logger for logging messages for this class
     private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
+
+    // -- GUI Components --
     private JFrame frmFoundation;
     private JLabel lblStatusLabel;
     private JLabel lblStartTime;
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
-    private JButton btnPlay, btnPause, btnStop, btnLoad;
+    private JButton btnPlay, btnPause, btnStop;
 
     // -- Loop Control Components --
     private JTextField txtLoopStart, txtLoopEnd, txtLoopCount;
@@ -37,6 +40,11 @@ public class MusicLooperGUI {
     //Counter for repeats
     private int intRepeatsRemaining;
     private boolean boolIsUserDragging;
+
+    // -- File Browser Components --
+    private JList<File> fileList;
+    private DefaultListModel<File> fileListModel;
+    private JButton btnOpenFolder;
 
     /**
      * The main entry point for the application.
@@ -74,44 +82,82 @@ public class MusicLooperGUI {
         frmFoundation.setLayout(new BorderLayout(10, 10));
 
         // Add all the panels to the frame
-        frmFoundation.add(createTopPanel(), BorderLayout.NORTH);
-        frmFoundation.add(createLoopControlsPanel(), BorderLayout.CENTER);
-        frmFoundation.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
+        JPanel mainControlPanel = new JPanel(new BorderLayout(10,10));
+        mainControlPanel.add(createLoopControlsPanel(),BorderLayout.CENTER);
+        mainControlPanel.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
+
+        JPanel fileBrowserPanel = pnlCreateFileBrowser();
+
+        JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mainControlPanel, fileBrowserPanel);
+        splitPane.setResizeWeight(0.8);
+
+        frmFoundation.add(splitPane,BorderLayout.CENTER);
 
 
         lblStatusLabel = new JLabel("Load an audio file to begin");
-        lblStatusLabel.add(createTopPanel(), BorderLayout.NORTH);
         lblStatusLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         // Initial state for controls
         setPlaybackButtonsEnabled(false);
         setLoopControlsEnabled(false);
-
         // Initialize the Timer
         setupTimer();
 
         // Size the window and make it visible
         frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
-        frmFoundation.setMinimumSize(frmFoundation.getSize()); // Prevent resizing smaller than packed size
+        frmFoundation.setSize(1000,600);//
+//        frmFoundation.setMinimumSize(frmFoundation.getSize()); // Prevent resizing smaller than packed size
         frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
         frmFoundation.setVisible(true);
     }
 
+//    /**
+//     * Creates the top panel which contains the file loading controls.
+//     *
+//     * @return A JPanel containing the load/unload button.
+//     */
+//    private JPanel createTopPanel() {
+//        JPanel pnlTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+//        pnlTopPanel.setBorder(new EmptyBorder(5, 5, 0, 5)); // Add some padding
+//
+//        btnLoad = new JButton("Load Audio File");
+//        btnLoad.addActionListener(e -> loadAudioFile());
+//        pnlTopPanel.add(btnLoad);
+//
+//        return pnlTopPanel;
+//    }
+
     /**
-     * Creates the top panel which contains the file loading controls.
-     *
-     * @return A JPanel containing the load/unload button.
+     * Creates the file browser panel on the RIGHT side of the UI
+     * @return A JPanel containing the open folder button and a list of audio files
      */
-    private JPanel createTopPanel() {
-        JPanel pnlTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        pnlTopPanel.setBorder(new EmptyBorder(5, 5, 0, 5)); // Add some padding
+    private JPanel pnlCreateFileBrowser(){
+        JPanel panel = new JPanel(new BorderLayout(5,5));
+        panel.setBorder(BorderFactory.createTitledBorder("Audio Files"));
 
-        btnLoad = new JButton("Load Audio File");
-        btnLoad.addActionListener(e -> loadAudioFile());
-        pnlTopPanel.add(btnLoad);
+        //Button to open a folder
+        btnOpenFolder = new JButton("Open Folder");
+        panel.add(btnOpenFolder,BorderLayout.NORTH);
 
-        return pnlTopPanel;
+        //List to display the files
+        fileListModel = new DefaultListModel<>();
+        fileList = new JList<>(fileListModel);
+
+        //PLACEHOLDER TEXT
+        fileListModel.addElement(new File("Song_1.wav"));
+        fileListModel.addElement(new File("Song_2.wav"));
+        fileListModel.addElement(new File("Song_3.wav"));
+
+        //Put the list in a scrollable pane
+        JScrollPane scrollPane = new JScrollPane(fileList);
+        panel.add(scrollPane, BorderLayout.CENTER);
+
+        //Preferred size start out
+        panel.setPreferredSize(new Dimension(200,0));
+
+        return panel;
     }
+
 
     /**
      * Creates the Central Panel for loop settings
