@@ -1,12 +1,9 @@
 import javax.sound.sampled.*;
 import javax.swing.*;
-import javax.swing.border.Border;
 import javax.swing.border.EmptyBorder;
-import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -106,27 +103,11 @@ public class MusicLooperGUI {
 
         // Size the window and make it visible
         frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
-        frmFoundation.setSize(1000,600);//
-//        frmFoundation.setMinimumSize(frmFoundation.getSize()); // Prevent resizing smaller than packed size
+        frmFoundation.setSize(1000,600);// Window Sizing (Adjust later instead of Magic #)
         frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
         frmFoundation.setVisible(true);
+        frmFoundation.setResizable(false); // Unable to resize
     }
-
-//    /**
-//     * Creates the top panel which contains the file loading controls.
-//     *
-//     * @return A JPanel containing the load/unload button.
-//     */
-//    private JPanel createTopPanel() {
-//        JPanel pnlTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-//        pnlTopPanel.setBorder(new EmptyBorder(5, 5, 0, 5)); // Add some padding
-//
-//        btnLoad = new JButton("Load Audio File");
-//        btnLoad.addActionListener(e -> loadAudioFile());
-//        pnlTopPanel.add(btnLoad);
-//
-//        return pnlTopPanel;
-//    }
 
     /**
      * Creates the file browser panel on the RIGHT side of the UI
