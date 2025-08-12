@@ -477,21 +477,39 @@ public class MusicLooperGUI {
      */
     private long parseTime(String timeString) {
         try {
-            //Split the string at the : first
             String[] parts = timeString.split(":");
             if (parts.length == 2) {
-                // Then split the string at the decimal
-                String[] secParts = parts[1].split("\\.");
                 long minutes = Long.parseLong(parts[0]);
-                long seconds = Long.parseLong(secParts[0]);
-                long miliseconds = Long.parseLong(secParts[1]);
-                //Convert everything to microseconds
-                return (minutes * 60 * 1_000_000L) + (seconds * 1_000_000L) +(miliseconds * 1000L);
+                long seconds = 0;
+                long milliseconds = 0;
+
+                String secondPart = parts[1];
+                if (secondPart.contains(".")) {
+                    String[] secParts = secondPart.split("\\.");
+                    seconds = Long.parseLong(secParts[0]);
+
+                    // Handle user-typed milliseconds of varying length (e.g., .9, .90, .900)
+                    String msString = secParts[1];
+                    if (msString.length() > 3) { // Truncate if too long
+                        msString = msString.substring(0, 3);
+                    }
+                    while(msString.length() < 3) { // Pad with zeros if too short
+                        msString += "0";
+                    }
+                    milliseconds = Long.parseLong(msString);
+
+                } else {
+                    // No milliseconds, just parse the seconds
+                    seconds = Long.parseLong(secondPart);
+                }
+
+                // Convert everything to microseconds
+                return (minutes * 60 * 1_000_000L) + (seconds * 1_000_000L) + (milliseconds * 1000L);
             }
-        } catch (NumberFormatException e) {
-            LOGGER.log(Level.WARNING, "Invalid Time Format: " + timeString, e);
+        } catch (Exception e) {
+            LOGGER.log(Level.WARNING, "Could not parse time format: " + timeString, e);
         }
-        return 0; // If parsing fails, return 0 as the default
+        return -1; // Return -1 on failure to prevent accidental looping at 0
     }
 
     /**
