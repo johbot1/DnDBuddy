@@ -287,19 +287,19 @@ public class MusicLooperGUI {
                 if (!boolIsUserDragging){
                     long currentSeconds = currentMicroSeconds / 1_000_000;
                     sldrTimelineSlider.setValue((int) currentSeconds);
-                    lblStartTime.setText(formatTime(currentSeconds));
+                    lblStartTime.setText(formatTime(currentMicroSeconds));
                 }
 
 
                 // -- Core Looping Logic --
                 if (chkEnableLoop.isSelected()) {
-                    long loopEndMicro = parseTime(txtLoopEnd.getText()) * 1_000_000;
+                    long loopEndMicro = parseTime(txtLoopEnd.getText());
 
                     if (currentMicroSeconds >= loopEndMicro) {
                         if (intRepeatsRemaining > 0) {
                             intRepeatsRemaining--;
                             LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
-                            long loopStartMicro = parseTime(txtLoopStart.getText()) * 1_000_000;
+                            long loopStartMicro = parseTime(txtLoopStart.getText());
                             clpAudioClip.setMicrosecondPosition(loopStartMicro);
                         } else {
                             // The loop has finished, let the song continue
@@ -349,11 +349,12 @@ public class MusicLooperGUI {
 
                 // Update GUI with new audio file info
                 lblStatusLabel.setText("Loaded: " + selectedFile.getName());
+                long durationMicroseconds = clpAudioClip.getMicrosecondLength();
                 long durationSeconds = clpAudioClip.getMicrosecondLength() / 1_000_000;
                 sldrTimelineSlider.setMaximum((int) durationSeconds);
                 sldrTimelineSlider.setValue(0);
                 lblStartTime.setText("0:00");
-                lblEndTime.setText(formatTime(durationSeconds));
+                lblEndTime.setText(formatTime(durationMicroseconds));
                 setPlaybackButtonsEnabled(true);
                 setLoopControlsEnabled(true);
                 btnPlay.setText("Play");
@@ -463,8 +464,8 @@ public class MusicLooperGUI {
      */
     private void setLoopPoint(JTextField targetField) {
         if (clpAudioClip != null) {
-            long currentTimeSeconds = sldrTimelineSlider.getValue();
-            targetField.setText(formatTime(currentTimeSeconds));
+            long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
+            targetField.setText(formatTime(currentMicroSeconds));
         }
     }
 
@@ -476,11 +477,16 @@ public class MusicLooperGUI {
      */
     private long parseTime(String timeString) {
         try {
+            //Split the string at the : first
             String[] parts = timeString.split(":");
             if (parts.length == 2) {
+                // Then split the string at the decimal
+                String[] secParts = parts[1].split("\\.");
                 long minutes = Long.parseLong(parts[0]);
-                long seconds = Long.parseLong(parts[1]);
-                return (minutes * 60) + seconds;
+                long seconds = Long.parseLong(secParts[0]);
+                long miliseconds = Long.parseLong(secParts[1]);
+                //Convert everything to microseconds
+                return (minutes * 60 * 1_000_000L) + (seconds * 1_000_000L) +(miliseconds * 1000L);
             }
         } catch (NumberFormatException e) {
             LOGGER.log(Level.WARNING, "Invalid Time Format: " + timeString, e);
@@ -491,12 +497,14 @@ public class MusicLooperGUI {
     /**
      * Formats a duration in total seconds to an MM:SS string
      *
-     * @param totalSeconds The duration in Seconds
+     * @param totalMicroSeconds The duration in Seconds
      * @return A properly formatted string
      */
-    private String formatTime(long totalSeconds) {
+    private String formatTime(long totalMicroSeconds) {
+        long totalSeconds = totalMicroSeconds / 1_000_000;
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
-        return String.format("%02d:%02d", minutes, seconds);
+        long milliseconds = (totalMicroSeconds / 1000) % 1000;
+        return String.format("%02d:%02d.%03d", minutes, seconds,milliseconds);
     }
 }
