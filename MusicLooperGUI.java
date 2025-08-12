@@ -36,6 +36,7 @@ public class MusicLooperGUI {
     private Timer tmrTimeline;
     //Counter for repeats
     private int intRepeatsRemaining;
+    private boolean boolIsUserDragging;
 
     /**
      * The main entry point for the application.
@@ -243,6 +244,31 @@ public class MusicLooperGUI {
         sldrTimelineSlider = new JSlider(0, 244); // 4 minutes * 60 + 4 seconds = 244
         sldrTimelineSlider.setValue(0);
 
+        // A Listener to handle user clicking and dragging the slider
+        sldrTimelineSlider.addMouseListener(new java.awt.event.MouseAdapter(){
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e){
+                boolIsUserDragging = true; // User has taken control
+            }
+
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e){
+                if (clpAudioClip != null){
+                    int intNewPosition = sldrTimelineSlider.getValue();
+                    //Jump the audio to the new position (converting sec back to ms)
+                    clpAudioClip.setMicrosecondPosition(intNewPosition * 1_000_000L);
+                }
+                boolIsUserDragging = false; // User has released control
+            }
+        });
+
+        // A Listener to update the time label WHILE dragging
+        sldrTimelineSlider.addChangeListener(e ->{
+            if(boolIsUserDragging){
+                lblStartTime.setText(formatTime(sldrTimelineSlider.getValue()));
+            }
+        });
+
         pnlTimeline.add(lblStartTime, BorderLayout.WEST);
         pnlTimeline.add(sldrTimelineSlider, BorderLayout.CENTER);
         pnlTimeline.add(lblEndTime, BorderLayout.EAST);
@@ -257,11 +283,13 @@ public class MusicLooperGUI {
         tmrTimeline = new Timer(50, e -> {
             if (clpAudioClip != null && clpAudioClip.isRunning()) {
                 long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
+                // Only update the slider pos if the user isn't dragging it
+                if (!boolIsUserDragging){
+                    long currentSeconds = currentMicroSeconds / 1_000_000;
+                    sldrTimelineSlider.setValue((int) currentSeconds);
+                    lblStartTime.setText(formatTime(currentSeconds));
+                }
 
-                long currentSeconds = currentMicroSeconds / 1_000_000;
-
-                sldrTimelineSlider.setValue((int) currentSeconds);
-                lblStartTime.setText(formatTime(currentSeconds));
 
                 // -- Core Looping Logic --
                 if (chkEnableLoop.isSelected()) {
@@ -435,8 +463,8 @@ public class MusicLooperGUI {
      */
     private void setLoopPoint(JTextField targetField) {
         if (clpAudioClip != null) {
-            long currnetTimeSeconds = sldrTimelineSlider.getValue();
-            targetField.setText(formatTime(currnetTimeSeconds));
+            long currentTimeSeconds = sldrTimelineSlider.getValue();
+            targetField.setText(formatTime(currentTimeSeconds));
         }
     }
 
@@ -461,7 +489,7 @@ public class MusicLooperGUI {
     }
 
     /**
-     * Formats a duration in total seconds to a MM:SS string
+     * Formats a duration in total seconds to an MM:SS string
      *
      * @param totalSeconds The duration in Seconds
      * @return A properly formatted string
