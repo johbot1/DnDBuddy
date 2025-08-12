@@ -6,6 +6,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -137,16 +138,24 @@ public class MusicLooperGUI {
 
         //Button to open a folder
         btnOpenFolder = new JButton("Open Folder");
+        btnOpenFolder.addActionListener(e -> openFolder());
         panel.add(btnOpenFolder,BorderLayout.NORTH);
 
         //List to display the files
         fileListModel = new DefaultListModel<>();
         fileList = new JList<>(fileListModel);
+        fileList.setCellRenderer(new FlieNameRenderer());
 
-        //PLACEHOLDER TEXT
-        fileListModel.addElement(new File("Song_1.wav"));
-        fileListModel.addElement(new File("Song_2.wav"));
-        fileListModel.addElement(new File("Song_3.wav"));
+        //Listener to load the file when an item is selected
+        fileList.addListSelectionListener(e-> {
+            //Prevents (hopefully) the event firing twice
+            if (!e.getValueIsAdjusting()){
+                File selectedFile = fileList.getSelectedValue();
+                if (selectedFile != null){
+                    loadAudioFile(selectedFile);
+                }
+            }
+        });
 
         //Put the list in a scrollable pane
         JScrollPane scrollPane = new JScrollPane(fileList);
@@ -359,66 +368,53 @@ public class MusicLooperGUI {
     }
 
     /**
-     * Opens a JFileChooser dialog to allow user to select an Audio File
-     * For now, once selected, it'll just print to the console
+     * Loads the selected audio file into the player.
+     * @param fileToLoad The audio file to load.
      */
-    private void loadAudioFile() {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setDialogTitle("Select an Audio File (.mp3, .wav, etc)");
-        //Filter for common audio types [STANDARD JAVA ONLY SUPPORT .wav / .au OUT OF THE BOX]
-        fileChooser.setFileFilter(new FileNameExtensionFilter("Audio Files", "wav", "mp3", "au"));
-
-        int usrSelection = fileChooser.showOpenDialog(frmFoundation);
-
-        if (usrSelection == JFileChooser.APPROVE_OPTION) {
-            File selectedFile = fileChooser.getSelectedFile();
-            try {
-                //If a clip is already opened, close it to free resources
-                if (clpAudioClip != null && clpAudioClip.isOpen()) {
-                    clpAudioClip.close();
-                }
-
-                AudioInputStream strmAudioStream = AudioSystem.getAudioInputStream(selectedFile);
-                clpAudioClip = AudioSystem.getClip();
-
-                // Adds a listener to handle events like STOP (when a song ends)
-                clpAudioClip.addLineListener(event -> {
-                    if (event.getType() == LineEvent.Type.STOP) {
-                        // When naturally finishing, stop the timer and reset UI
-                        if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
-                            stopAudio();
-                        }
-                    }
-                });
-
-                clpAudioClip.open(strmAudioStream);
-
-                // Update GUI with new audio file info
-                lblStatusLabel.setText("Loaded: " + selectedFile.getName());
-                long durationMicroseconds = clpAudioClip.getMicrosecondLength();
-                long durationSeconds = clpAudioClip.getMicrosecondLength() / 1_000_000;
-                sldrTimelineSlider.setMaximum((int) durationSeconds);
-                sldrTimelineSlider.setValue(0);
-                lblStartTime.setText("0:00");
-                lblEndTime.setText(formatTime(durationMicroseconds));
-                setPlaybackButtonsEnabled(true);
-                setLoopControlsEnabled(true);
-                btnPlay.setText("Play");
-
-                LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", selectedFile.getAbsolutePath());
-            } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-                LOGGER.log(Level.SEVERE, "Error loading audio file", e);
-                JOptionPane.showMessageDialog(frmFoundation,
-                        "Could not load the audio file: " + e.getMessage(),
-                        "Audio Load Error",
-                        JOptionPane.ERROR_MESSAGE);
-                setPlaybackButtonsEnabled(false);
-                setLoopControlsEnabled(false);
+    private void loadAudioFile(File fileToLoad) {
+        try {
+            // If a clip is already open, close it to free up resources.
+            if (clpAudioClip != null) {
+                clpAudioClip.close();
             }
 
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(fileToLoad);
+            clpAudioClip = AudioSystem.getClip();
 
-            System.out.println("Selected File: " + selectedFile.getAbsolutePath());
-            lblStatusLabel.setText("Loaded: " + selectedFile.getName());
+            // Adds a listener to handle events like STOP (when a song ends)
+            clpAudioClip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP) {
+                    // When naturally finishing, stop the timer and reset UI
+                    if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
+                        stopAudio();
+                    }
+                }
+            });
+
+            clpAudioClip.open(audioStream);
+
+            // Update GUI with new audio file info
+            long durationMicroseconds = clpAudioClip.getMicrosecondLength();
+            long durationSeconds = durationMicroseconds / 1_000_000;
+            sldrTimelineSlider.setMaximum((int) durationSeconds);
+            lblEndTime.setText(formatTime(durationMicroseconds));
+            lblStatusLabel.setText("Loaded: " + fileToLoad.getName());
+
+            stopAudio(); // Reset player to a clean state
+
+            setPlaybackButtonsEnabled(true);
+            setLoopControlsEnabled(true);
+
+            LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", fileToLoad.getAbsolutePath());
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            LOGGER.log(Level.SEVERE, "Error loading audio file", e);
+            JOptionPane.showMessageDialog(frmFoundation,
+                    "Could not load the audio file: " + e.getMessage(),
+                    "Audio Load Error",
+                    JOptionPane.ERROR_MESSAGE);
+            setPlaybackButtonsEnabled(false);
+            setLoopControlsEnabled(false);
         }
     }
 
@@ -570,5 +566,51 @@ public class MusicLooperGUI {
         long seconds = totalSeconds % 60;
         long milliseconds = (totalMicroSeconds / 1000) % 1000;
         return String.format("%02d:%02d.%03d", minutes, seconds,milliseconds);
+    }
+
+    /**
+     * A custom display for file names in the browser, and not the full path
+     */
+    class FlieNameRenderer extends DefaultListCellRenderer{
+        @Override
+        public Component getListCellRendererComponent(
+                JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus){
+                super.getListCellRendererComponent(list,value,index,isSelected,hasFocus);
+                if (value instanceof File){
+                    File file = (File) value;
+                    setText(file.getName()); // Only show the name
+                }
+            return this;
+        }
+    }
+
+    /**
+     * Opens a JFileChooser to select a directory, then populates the file list
+     * with supported audio files found inside
+     */
+    private void openFolder(){
+        JFileChooser folderChooser = new JFileChooser();
+        folderChooser.setDialogTitle("Select Audio Folder");
+        folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); //Only allow folders to be selected
+        folderChooser.setAcceptAllFileFilterUsed(false); //Disables "All Files" option;
+
+        if (folderChooser.showOpenDialog(frmFoundation) == JFileChooser.APPROVE_OPTION){
+            File selectedFolder = folderChooser.getSelectedFile();
+
+            //Clear out the old list
+            fileListModel.clear();
+
+            //Find all .wav and .au files within the selected folder
+            File[] audioFiles = selectedFolder.listFiles((dir,name)->
+                    name.toLowerCase().endsWith(".wav") || name.toLowerCase().endsWith(".au")
+            );
+
+            if (audioFiles != null){
+                for (File file : audioFiles){
+                    fileListModel.addElement(file);
+                }
+                LOGGER.log(Level.INFO, "Found {0} audio files in {1}",new Object[]{audioFiles.length, selectedFolder.getAbsolutePath()});
+            }
+        }
     }
 }
