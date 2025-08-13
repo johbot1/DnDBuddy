@@ -80,7 +80,7 @@ public class MusicLooperGUI {
     /**
      * Initializes the main frame and all its UI components.
      */
-    private void initUI() {
+    public void initUI() {
         // Create the main window (JFrame)
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
         frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
