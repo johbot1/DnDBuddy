@@ -1,27 +1,89 @@
 # CHECKPOINTS.md
 
-## Phase 1) Setup and Window Creation
-- [X] 1.1 Initialize Java Project
-    - [X] 1.1.1 Create `Main` class extending `Application`
-    - [X] 1.1.2 Set up `start(Stage primaryStage)` and launch
-- [X] 1.2 Basic Window Layout
-    - [X] 1.2.1 Create root pane (e.g. `BorderPane` or `AnchorPane`)
-    - [X] 1.2.2 Reserve left area for “Script Viewer” and right for “Controls”
-    - [X] 1.2.3 Apply minimal styling and window title
+## Phase 0) DnD Buddy
+- ### [X] 0.1 Begin Work
+  - [X] 0.1.1 Create the project
+  - [X] 0.1.2 Create CHECKPOINTS.md
+  - [X] 0.1.3 Upload to GitHub
+- ### [] 0.2 Skeleton
+  - [X] 0.2.1 Implement a Main Menu (`Main`)
+  - [] 0.2.2 Establish Modular Structure for adding "Buddies"
+  - [] 0.2.3 Define consistent theme
+- ### [] 0.3 Muscle
+  - [] 0.3.1 Ensure Modules can be launched and closed independently
+  - [] 0.3.2 Add Puzzle Buddy to the Main Menu
+  - [] 0.3.3 Implement shared resources/utility classes
+- ### [] 0.4 Skin
+  - [] 0.4.1 Apply a consistent look across all windows
+  - [] 0.4.2 Create + set a custom Icon
+  - [] 0.4.3 (Stretch) Design a splash screen
+- ### [] 0.5 Soul
+  - [] 0.5.1 Finalize user doc (README.md)
+  - [] 0.5.2 Build a runnable JAR file for distribution
+  - [] 0.5.3 Test on Windows
 
-## Phase 2) Script Display & Clickable Text
-- [X] 2.1 Script Loading
-    - [X] 2.1.1 Load script text from resource (file/embedded string)
-    - [X] 2.1.2 Define simple markup syntax for links (e.g. `{Ivor Dotsk}`)
-- [] 2.2 Script Viewer Implementation
-    - [] 2.2.1 Use `TextFlow` or `WebView` to render non-editable text
-    - [] 2.2.2 Apply basic CSS for readability (fonts, spacing)
-- [] 2.3 Clickable & Hoverable Words
-    - [] 2.3.1 Build a map of keywords → metadata (character sheet, spell info)
-    - [] 2.3.2 Attach `Tooltip` on hover to show summary
-    - [] 2.3.3 Attach mouse-click handler to open detailed pop-up (`Dialog`/new `Stage`)
+## Phase 1) Groove Buddy
+- ### [X] 1.1 Begin Work
+    - [X] 1.1.1 Create `MusicLooperGUI` class, link it back to `Main`
+    - [X] 1.1.2 Establish Clearly defined checkpoints
+- ### [X] 1.2 Skeleton
+    - [X] 1.2.1 Setup Foundational panel and layout
+    - [X] 1.2.2 Setup basic visual feedback (audio start/end times)
+    - [X] 1.2.3 Setup buttons (no functionality)
+    - [X] 1.2.4 Setup Timeline (No Functionality)
+    - [X] 1.2.5 Setup Explorer Window (No Functionality)
+- ### [] 1.3 Muscle
+    - [X] 1.3.1 Let "Load Audio File" open a file browser
+    - [X] 1.3.2 Ability to actually load songs
+    - [X] 1.3.3 Ability to PLAY songs that are loaded
+    - [X] 1.3.4 Timeline Functionality
+    - [X] 1.3.5 Dynamic Playback
+    - [X] 1.3.6 "Set Loop" button functionality
+    - [X] 1.3.7 Looping Functionality
+    - [X] 1.3.8 Visual clarity with playback
+    - [X] 1.3.9 Timeline slider interactivity
+    - [X] 1.3.10.1 Time formatting
+    - [X] 1.3.10.2 File Explorer Window
+    - [X] 1.3.10.3 Saving Loop Configs as a Session
+    - [] 1.3.10.4 Saving Loop Configs in a file
+    - [X] 1.3.10.5 .WAV/.AU Support
+    - [] 1.3.10.6 .MP3 Support
+- ### [] 1.4 Skin
+  - [] 1.4.1 Style the UI with basic color
+  - [] 1.4.2 Style the UI with an Image
+- ### [] 1.5 Soul
+  - [] 1.5.1 Bug Fixes
+  - [] 1.5.2 QoL Fixes
 
-## Phase 3) Audio System Integration
+## Phase 2) Puzzle Buddy
+- ### [] 2.1 Begin Work
+  - [] 2.1.1 Create PuzzleBuddyGUI class and link it to the Main menu
+  - [] 2.1.2 Define a generic data structure for puzzle states (e.g., grids, inputs, solution)
+
+- ### [] 2.2 Skeleton
+  - [] 2.2.1 Create main puzzle window layout
+  - [] 2.2.2 Add a central panel for puzzle visualization (e.g., custom JPanel for drawing)
+  - [] 2.2.3 Add a side/bottom panel for player input controls (buttons, etc.)
+  - [] 2.2.4 Add a "Reset Puzzle" button (No Functionality)
+  - [] 2.2.5 Add a status label for instructions or feedback (e.g., "Solved!" or "Try again")
+
+- ### [] 2.3 Muscle
+  - [] 2.3.1 Implement puzzle rendering logic (draw the initial state of the puzzle)
+  - [] 2.3.2 Add functionality to input controls (e.g., clicking a button changes a color/symbol)
+  - [] 2.3.3 Implement state-checking logic to determine if the puzzle is solved
+  - [] 2.3.4 Add functionality to the "Reset Puzzle" button to revert to the initial state
+  - [] 2.3.5 Load a specific puzzle configuration (e.g., Chromatic Cypher)
+  - [] 2.3.6 Update status label based on puzzle state (e.g., on solve, on reset)
+
+- ### [] 2.4 Skin
+  - [] 2.4.1 Style the puzzle components with thematic colors and fonts
+  - [] 2.4.2 Add simple visual feedback for actions (e.g., highlight selected item, animate a correct move)
+ 
+- ### [] 2.5 Soul
+  - [] 2.5.1 Bug Fixes (e.g., handle edge cases, prevent invalid moves)
+  - [] 2.5.2 QoL Fixes (e.g., add a hint system, support different puzzle difficulties)
+
+## Phase 3) Lore Buddy
 - [ ] 3.1 MediaPlayer Setup
     - [ ] 3.1.1 Instantiate a `MediaPlayer` for background **music**
     - [ ] 3.1.2 Instantiate a separate `MediaPlayer` (or `AudioClip`) for **SFX**
@@ -34,30 +96,29 @@
     - [ ] 3.3.2 Ensure SFX playback layers over music without stopping it
     - [ ] 3.3.3 Handle media end-of-stream (loop or stop)
 
-## Phase 4) Section Manager & Script–Audio Mapping
-- [ ] 4.1 Section Identification
-    - [ ] 4.1.1 Define how script is broken into “sections” (scene headers, markers)
-    - [ ] 4.1.2 Visually highlight current section in the Script Viewer
-- [ ] 4.2 Assignment UI
-    - [ ] 4.2.1 Provide UI controls to assign a **song** or **SFX** to each section
-    - [ ] 4.2.2 Store assignments in an in-memory map (e.g. `Map<SectionID, AudioClip>`)
-- [ ] 4.3 Auto-Triggering
-    - [ ] 4.3.1 On section change, auto-play assigned music
-    - [ ] 4.3.2 Trigger assigned SFX at section start or via explicit button
+## Phase 4) 
+- [ ] 4.1 
+    - [ ] 4.1.1 
+    - [ ] 4.1.2 
+- [ ] 4.2 
+    - [ ] 4.2.1 
+    - [ ] 4.2.2 
+- [ ] 4.3 
+    - [ ] 4.3.1 
+    - [ ] 4.3.2 
 
-## Phase 5) Data Persistence & Future Extensions
-- [ ] 5.1 Save/Load Configuration
-    - [ ] 5.1.1 Export section–audio mapping to JSON or properties file
-    - [ ] 5.1.2 Load saved mapping on startup
-- [ ] 5.2 Character/Spell Database (Optional)
-    - [ ] 5.2.1 Define lightweight SQLite schema for characters/spells
-    - [ ] 5.2.2 Add CRUD UI to edit database entries
-- [ ] 5.3 Nice-to-Haves
-    - [ ] 5.3.1 Searchable/Foldable script viewer
-    - [ ] 5.3.2 Keyboard shortcuts for audio triggers
-    - [ ] 5.3.3 Export session notes or PDF reports
-
+## Phase 5) 
+- [ ] 5.1 
+    - [ ] 5.1.1 
+    - [ ] 5.1.2 
+- [ ] 5.2 
+    - [ ] 5.2.1 
+    - [ ] 5.2.2 
+- [ ] 5.3 
+    - [ ] 5.3.1 
+    - [ ] 5.3.2 
+    - [ ] 5.3.3 
 
 # Stretch Goals
-- YAML support
-- 
+- Terminal execution
+- EXE file 
