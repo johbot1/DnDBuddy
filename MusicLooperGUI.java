@@ -4,6 +4,8 @@ import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,6 +45,11 @@ public class MusicLooperGUI {
     private JList<File> fileList;
     private DefaultListModel<File> fileListModel;
     private JButton btnOpenFolder;
+
+    // -- Configuration Components --
+    private Map<File,LoopConfig> loopConfigMap = new HashMap<>();
+    private File currentlyLoadedFile;
+    private boolean updatingUI = false;
 
     /**
      * The main entry point for the application.
@@ -161,54 +168,28 @@ public class MusicLooperGUI {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
+        SimpleDocumentListener sdlListener = e -> updateCurrentConfigFromUI();
+
         // -- Row 0: Loop Start --
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(new JLabel("Loop Start: "), gbc);
-
-        gbc.gridx = 1;
-        txtLoopStart = new JTextField("00:00", 5);
-        panel.add(txtLoopStart, gbc);
-
-        gbc.gridx = 2;
-        btnSetLoopStart = new JButton("Set");
-        panel.add(btnSetLoopStart, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Loop Start:"), gbc);
+        gbc.gridx = 1; txtLoopStart = new JTextField("00:00.000", 8); txtLoopStart.getDocument().addDocumentListener(sdlListener); panel.add(txtLoopStart, gbc);
+        gbc.gridx = 2; btnSetLoopStart = new JButton("Set"); btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart)); panel.add(btnSetLoopStart, gbc);
 
         // -- Row 1: Loop End --
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        panel.add(new JLabel("Loop End:"), gbc);
-
-        gbc.gridx = 1;
-        txtLoopEnd = new JTextField("00:00", 5);
-        panel.add(txtLoopEnd, gbc);
-
-        gbc.gridx = 2;
-        btnSetLoopEnd = new JButton("Set");
-        panel.add(btnSetLoopEnd, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Loop End:"), gbc);
+        gbc.gridx = 1; txtLoopEnd = new JTextField("00:00.000", 8); txtLoopEnd.getDocument().addDocumentListener(sdlListener); panel.add(txtLoopEnd, gbc);
+        gbc.gridx = 2; btnSetLoopEnd = new JButton("Set"); btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd)); panel.add(btnSetLoopEnd, gbc);
 
         // -- Row 2: Repetitions --
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        panel.add(new JLabel("Repetitions:"), gbc);
+        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Repetitions:"), gbc);
+        gbc.gridx = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(sdlListener); panel.add(txtLoopCount, gbc);
 
-        gbc.gridx = 1;
-        txtLoopCount = new JTextField("1", 3);
-        panel.add(txtLoopCount, gbc);
+        // -- Row 3: Enable Loops --
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3; chkEnableLoop = new JCheckBox("Enable Loop"); panel.add(chkEnableLoop, gbc);
 
-        // -- Row 3: Repetitions --
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 3; // Span across all columns
-        chkEnableLoop = new JCheckBox("Enable Loop");
-        panel.add(chkEnableLoop, gbc);
 
         // -- Row 4: Status Label--
-        gbc.gridy = 4;
-        gbc.gridwidth = 3;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        lblStatusLabel = new JLabel("Load an audio file to begin.", SwingConstants.CENTER);
-        panel.add(lblStatusLabel, gbc);
+        gbc.gridy = 4; gbc.fill = GridBagConstraints.HORIZONTAL; lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER); panel.add(lblStatusLabel, gbc);
 
         return panel;
     }
@@ -353,36 +334,41 @@ public class MusicLooperGUI {
      * @param fileToLoad The audio file to load.
      */
     private void loadAudioFile(File fileToLoad) {
+        this.currentlyLoadedFile = fileToLoad;
         try {
             // If a clip is already open, close it to free up resources.
-            if (clpAudioClip != null) {
-                clpAudioClip.close();
-            }
+            if (clpAudioClip != null) clpAudioClip.close();
+
 
             AudioInputStream audioStream = AudioSystem.getAudioInputStream(fileToLoad);
             clpAudioClip = AudioSystem.getClip();
-
             // Adds a listener to handle events like STOP (when a song ends)
+            // When naturally finishing, stop the timer and reset UI
             clpAudioClip.addLineListener(event -> {
-                if (event.getType() == LineEvent.Type.STOP) {
-                    // When naturally finishing, stop the timer and reset UI
-                    if (clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
+                if (event.getType() == LineEvent.Type.STOP &&
+                        clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
                         stopAudio();
-                    }
                 }
             });
-
             clpAudioClip.open(audioStream);
 
             // Update GUI with new audio file info
             long durationMicroseconds = clpAudioClip.getMicrosecondLength();
-            long durationSeconds = durationMicroseconds / 1_000_000;
-            sldrTimelineSlider.setMaximum((int) durationSeconds);
+            sldrTimelineSlider.setMaximum((int) (durationMicroseconds / 1_000_000));
             lblEndTime.setText(formatTime(durationMicroseconds));
             lblStatusLabel.setText("Loaded: " + fileToLoad.getName());
 
-            stopAudio(); // Reset player to a clean state
+            //Check for existing configs. If none exist, create new
+            LoopConfig config = loopConfigMap.computeIfAbsent(fileToLoad, k -> new LoopConfig());
 
+            //Update the UI with stored or new config properties
+            updatingUI = true;
+            txtLoopStart.setText(config.loopStart);
+            txtLoopEnd.setText(config.loopEnd);
+            txtLoopCount.setText(String.valueOf(config.repeats));
+            updatingUI = false;
+
+            stopAudio(); // Reset player to a clean state
             setPlaybackButtonsEnabled(true);
             setLoopControlsEnabled(true);
 
@@ -489,6 +475,9 @@ public class MusicLooperGUI {
         if (clpAudioClip != null) {
             long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
             targetField.setText(formatTime(currentMicroSeconds));
+
+            //Saves the change immediately
+            updateCurrentConfigFromUI();
         }
     }
 
@@ -550,22 +539,6 @@ public class MusicLooperGUI {
     }
 
     /**
-     * A custom display for file names in the browser, and not the full path
-     */
-    class FlieNameRenderer extends DefaultListCellRenderer{
-        @Override
-        public Component getListCellRendererComponent(
-                JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus){
-                super.getListCellRendererComponent(list,value,index,isSelected,hasFocus);
-                if (value instanceof File){
-                    File file = (File) value;
-                    setText(file.getName()); // Only show the name
-                }
-            return this;
-        }
-    }
-
-    /**
      * Opens a JFileChooser to select a directory, then populates the file list
      * with supported audio files found inside
      */
@@ -593,5 +566,67 @@ public class MusicLooperGUI {
                 LOGGER.log(Level.INFO, "Found {0} audio files in {1}",new Object[]{audioFiles.length, selectedFolder.getAbsolutePath()});
             }
         }
+    }
+
+    /**
+     * A custom display for file names in the browser, and not the full path
+     */
+    class FlieNameRenderer extends DefaultListCellRenderer{
+        @Override
+        public Component getListCellRendererComponent(
+                JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus){
+                super.getListCellRendererComponent(list,value,index,isSelected,hasFocus);
+                if (value instanceof File){
+                    File file = (File) value;
+                    setText(file.getName()); // Only show the name
+                }
+            return this;
+        }
+    }
+
+    /**
+     * Data class to hold the loop config for a single audio file
+     */
+    class LoopConfig{
+        String loopStart="00:00.000";
+        String loopEnd = "00:00.000";
+        int repeats = 1;
+    }
+
+    /**
+     * Saves current UI values to the LoopConfig map
+     * for the current file
+     */
+    private void updateCurrentConfigFromUI(){
+        if (currentlyLoadedFile != null){
+            // Get the config for the current file (SHOULD already exist)
+            LoopConfig config = loopConfigMap.get(currentlyLoadedFile);
+            if (updatingUI) return; // Do not save the changes if UI is actively being updated programatically
+
+            if (config != null){
+                config.loopStart = txtLoopStart.getText();
+                config.loopEnd = txtLoopEnd.getText();
+                try{
+                    config.repeats = Integer.parseInt(txtLoopCount.getText());
+                } catch (NumberFormatException e){
+                    //[FIX LATER] If user says something invalid ignore for the moment
+                    // The Play button already defaults to "1" for this
+                }
+            }
+        }
+    }
+
+    /**
+     * Helper interface to make DocListeners cleaned up
+     */
+    interface SimpleDocumentListener extends javax.swing.event.DocumentListener {
+        void update(javax.swing.event.DocumentEvent e);
+
+        @Override
+        default void insertUpdate(javax.swing.event.DocumentEvent e) { update(e); }
+        @Override
+        default void removeUpdate(javax.swing.event.DocumentEvent e) { update(e); }
+        @Override
+        default void changedUpdate(javax.swing.event.DocumentEvent e) { update(e); }
     }
 }
