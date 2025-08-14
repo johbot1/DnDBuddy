@@ -84,20 +84,20 @@
   - [] 2.5.2 QoL Fixes (e.g., add a hint system, support different puzzle difficulties)
 
 ## Phase 3) Lore Buddy
-- [ ] 3.1 MediaPlayer Setup
-    - [ ] 3.1.1 Instantiate a `MediaPlayer` for background **music**
-    - [ ] 3.1.2 Instantiate a separate `MediaPlayer` (or `AudioClip`) for **SFX**
-- [ ] 3.2 Audio Controls UI
-    - [ ] 3.2.1 Add Play, Pause, Fade Out buttons for music
-    - [ ] 3.2.2 Add Volume slider for music channel
-    - [ ] 3.2.3 Add buttons/list for triggering SFX
-- [ ] 3.3 Playback Logic
-    - [ ] 3.3.1 Hook up Play/Pause/Fade Out actions
-    - [ ] 3.3.2 Ensure SFX playback layers over music without stopping it
-    - [ ] 3.3.3 Handle media end-of-stream (loop or stop)
+- [ ] 3.1 Coming soon...
+    - [ ] 3.1.1 
+    - [ ] 3.1.2 
+- [ ] 3.2 
+    - [ ] 3.2.1 
+    - [ ] 3.2.2 
+    - [ ] 3.2.3 
+- [ ] 3.3 
+    - [ ] 3.3.1 
+    - [ ] 3.3.2 
+    - [ ] 3.3.3 
 
-## Phase 4) 
-- [ ] 4.1 
+## Phase 4) Battle Buddy
+- [ ] 4.1 Coming soon...
     - [ ] 4.1.1 
     - [ ] 4.1.2 
 - [ ] 4.2 
