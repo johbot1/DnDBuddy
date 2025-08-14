@@ -133,7 +133,7 @@ public class MusicLooperGUI {
         //List to display the files
         fileListModel = new DefaultListModel<>();
         fileList = new JList<>(fileListModel);
-        fileList.setCellRenderer(new FlieNameRenderer());
+        fileList.setCellRenderer(new FileNameRenderer());
 
         //Listener to load the file when an item is selected
         fileList.addListSelectionListener(e -> {
@@ -619,51 +619,5 @@ public class MusicLooperGUI {
                 }
             }
         }
-    }
-
-    /**
-     * Helper interface to make DocListeners cleaned up
-     */
-    interface SimpleDocumentListener extends javax.swing.event.DocumentListener {
-        void update(javax.swing.event.DocumentEvent e);
-
-        @Override
-        default void insertUpdate(javax.swing.event.DocumentEvent e) {
-            update(e);
-        }
-
-        @Override
-        default void removeUpdate(javax.swing.event.DocumentEvent e) {
-            update(e);
-        }
-
-        @Override
-        default void changedUpdate(javax.swing.event.DocumentEvent e) {
-            update(e);
-        }
-    }
-
-    /**
-     * A custom display for file names in the browser, and not the full path
-     */
-    class FlieNameRenderer extends DefaultListCellRenderer {
-        @Override
-        public Component getListCellRendererComponent(
-                JList<?> list, Object value, int index, boolean isSelected, boolean hasFocus) {
-            super.getListCellRendererComponent(list, value, index, isSelected, hasFocus);
-            if (value instanceof File file) {
-                setText(file.getName()); // Only show the name
-            }
-            return this;
-        }
-    }
-
-    /**
-     * Data class to hold the loop config for a single audio file
-     */
-    class LoopConfig {
-        String loopStart = "00:00.000";
-        String loopEnd = "00:00.000";
-        int repeats = 1;
     }
 }
