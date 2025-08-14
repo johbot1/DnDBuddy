@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -74,8 +75,36 @@ public class MusicLooperGUI {
      * Initializes the main frame and all its UI components.
      */
     public void initUI() {
-        // Create instance of the audio engine
-        this.audioService = new AudioService();
+        // This is the function that provides the current loop settings from the UI fields.
+        Supplier<LoopConfig> loopConfigProvider = () -> {
+            LoopConfig config = new LoopConfig();
+            config.loopStart = txtLoopStart.getText();
+            config.loopEnd = txtLoopEnd.getText();
+            try {
+                config.repeats = Integer.parseInt(txtLoopCount.getText());
+            } catch (NumberFormatException e) {
+                config.repeats = 1; // Default to 1 if text is invalid
+            }
+            return config;
+        };
+
+        // Create the instance of our audio engine, passing it all the necessary functions.
+        this.audioService = new AudioService(
+                // 1. The function to update the time display
+                currentMicroseconds -> {
+                    if (!boolIsUserDragging) {
+                        long currentSeconds = currentMicroseconds / 1_000_000;
+                        sldrTimelineSlider.setValue((int) currentSeconds);
+                        lblStartTime.setText(AudioService.formatTime(currentMicroseconds));
+                    }
+                },
+                // 2. The function to get the current loop settings
+                loopConfigProvider,
+                // 3. The function to check if the loop is enabled
+                () -> chkEnableLoop.isSelected(),
+                // 4. The function to run when looping finishes
+                () -> chkEnableLoop.setSelected(false)
+        );
 
         // Create the main window (JFrame)
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
@@ -312,41 +341,7 @@ public class MusicLooperGUI {
         return pnlTimeline;
     }
 
-    /**
-     * Sets up the Swing Timer to update the GUI every second during playback.
-     */
-    private void setupTimer() {
-        tmrTimeline = new Timer(50, e -> {
-            if (clpAudioClip != null && clpAudioClip.isRunning()) {
-                long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
-                // Only update the slider pos if the user isn't dragging it
-                if (!boolIsUserDragging) {
-                    long currentSeconds = currentMicroSeconds / 1_000_000;
-                    sldrTimelineSlider.setValue((int) currentSeconds);
-                    lblStartTime.setText(formatTime(currentMicroSeconds));
-                }
 
-
-                // -- Core Looping Logic --
-                if (chkEnableLoop.isSelected()) {
-                    long loopEndMicro = parseTime(txtLoopEnd.getText());
-
-                    if (currentMicroSeconds >= loopEndMicro) {
-                        if (intRepeatsRemaining > 0) {
-                            intRepeatsRemaining--;
-                            LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
-                            long loopStartMicro = parseTime(txtLoopStart.getText());
-                            clpAudioClip.setMicrosecondPosition(loopStartMicro);
-                        } else {
-                            // The loop has finished, let the song continue
-                            chkEnableLoop.setSelected(false);
-                            LOGGER.log(Level.INFO, "Looping has finished. Playing remainder of the song...");
-                        }
-                    }
-                }
-            }
-        });
-    }
 
     /**
      * Loads the selected audio file into the player.
@@ -405,61 +400,6 @@ public class MusicLooperGUI {
         }
     }
 
-    /**
-     * Starts playback of currently loaded audio clip
-     */
-    private void playAudio() {
-        if (clpAudioClip != null) {
-            // If loop is enabled, start the repeat counter
-            if (chkEnableLoop.isSelected()) {
-                try {
-                    intRepeatsRemaining = Integer.parseInt(txtLoopCount.getText());
-                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
-                } catch (NumberFormatException r) {
-                    LOGGER.log(Level.WARNING, "Invalid Repeat count. Defaulting to 1");
-                    intRepeatsRemaining = 1;
-                    txtLoopCount.setText("1");
-                }
-            }
-            clpAudioClip.start();
-            tmrTimeline.start();
-            btnPlay.setText("Resume");
-            LOGGER.info("Playback BEGIN");
-        }
-    }
-
-    /**
-     * Pauses currently loaded audio clip
-     */
-    private void pauseAudio() {
-        if (clpAudioClip != null && clpAudioClip.isRunning()) {
-            clpAudioClip.stop();
-            tmrTimeline.stop();
-            LOGGER.info("Playback PAUSED");
-        }
-    }
-
-    /**
-     * Stops currently loaded audio clip
-     */
-    private void stopAudio() {
-        if (clpAudioClip != null) {
-            // Stop the clip first
-            clpAudioClip.stop();
-            // Reset its position to the beginning
-            clpAudioClip.setFramePosition(0);
-            // Stop the timer that updates the slider
-            tmrTimeline.stop();
-            // Reset the slider and time label to the start
-            sldrTimelineSlider.setValue(0);
-            lblStartTime.setText("0:00");
-            btnPlay.setText("Play");
-            // Reset the Loop state
-            chkEnableLoop.setSelected(false);
-            //loopRepetitionRemaining = 0;
-            LOGGER.info("Playback stopped and reset.");
-        }
-    }
 
     /**
      * Enables or disables the playback control buttons
@@ -501,62 +441,6 @@ public class MusicLooperGUI {
         }
     }
 
-    /**
-     * Parses a time string (MM:SS) into total seconds
-     *
-     * @param timeString The String to parse
-     * @return The total number of seconds
-     */
-    private long parseTime(String timeString) {
-        try {
-            String[] parts = timeString.split(":");
-            if (parts.length == 2) {
-                long minutes = Long.parseLong(parts[0]);
-                long seconds = 0;
-                long milliseconds = 0;
-
-                String secondPart = parts[1];
-                if (secondPart.contains(".")) {
-                    String[] secParts = secondPart.split("\\.");
-                    seconds = Long.parseLong(secParts[0]);
-
-                    // Handle user-typed milliseconds of varying length (e.g., .9, .90, .900)
-                    String msString = secParts[1];
-                    if (msString.length() > 3) { // Truncate if too long
-                        msString = msString.substring(0, 3);
-                    }
-                    while (msString.length() < 3) { // Pad with zeros if too short
-                        msString += "0";
-                    }
-                    milliseconds = Long.parseLong(msString);
-
-                } else {
-                    // No milliseconds, just parse the seconds
-                    seconds = Long.parseLong(secondPart);
-                }
-
-                // Convert everything to microseconds
-                return (minutes * 60 * 1_000_000L) + (seconds * 1_000_000L) + (milliseconds * 1000L);
-            }
-        } catch (Exception e) {
-            LOGGER.log(Level.WARNING, "Could not parse time format: " + timeString, e);
-        }
-        return -1; // Return -1 on failure to prevent accidental looping at 0
-    }
-
-    /**
-     * Formats a duration in total seconds to an MM:SS string
-     *
-     * @param totalMicroSeconds The duration in Seconds
-     * @return A properly formatted string
-     */
-    private String formatTime(long totalMicroSeconds) {
-        long totalSeconds = totalMicroSeconds / 1_000_000;
-        long minutes = totalSeconds / 60;
-        long seconds = totalSeconds % 60;
-        long milliseconds = (totalMicroSeconds / 1000) % 1000;
-        return String.format("%02d:%02d.%03d", minutes, seconds, milliseconds);
-    }
 
     /**
      * Opens a JFileChooser to select a directory, then populates the file list
