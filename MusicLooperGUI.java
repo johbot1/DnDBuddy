@@ -42,6 +42,7 @@ public class MusicLooperGUI {
 
 
     private boolean updatingUI = false;
+    private AudioService audioService;
 
     /**
      * The main entry point for the application.
@@ -59,12 +60,12 @@ public class MusicLooperGUI {
                 new MusicLooperGUI().initUI();
             } catch (Exception e) {
                 // Log the exception with a severe level and show a user-friendly error dialog.
-                LOGGER.log(Level.SEVERE, "An unexpected error occurred during GUI initialization.", e);
-                JOptionPane.showMessageDialog(null,
-                        "A critical error occurred and the application cannot start.\n" +
-                                "Please check the logs for more details.",
-                        "Application Startup Error",
-                        JOptionPane.ERROR_MESSAGE);
+//                LOGGER.log(Level.SEVERE, "An unexpected error occurred during GUI initialization.", e);
+//                JOptionPane.showMessageDialog(null,
+//                        "A critical error occurred and the application cannot start.\n" +
+//                                "Please check the logs for more details.",
+//                        "Application Startup Error",
+//                        JOptionPane.ERROR_MESSAGE);
             }
         });
     }
@@ -73,9 +74,12 @@ public class MusicLooperGUI {
      * Initializes the main frame and all its UI components.
      */
     public void initUI() {
+        // Create instance of the audio engine
+        this.audioService = new AudioService();
+
         // Create the main window (JFrame)
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
-        frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Close the window not the whole app
         frmFoundation.setLayout(new BorderLayout(10, 10));
 
         // Add all the panels to the frame
@@ -90,22 +94,16 @@ public class MusicLooperGUI {
 
         frmFoundation.add(splitPane, BorderLayout.CENTER);
 
-
-        lblStatusLabel = new JLabel("Load an audio file to begin");
-        lblStatusLabel.setBorder(new EmptyBorder(10, 10, 10, 10));
-
         // Initial state for controls
         setPlaybackButtonsEnabled(false);
         setLoopControlsEnabled(false);
-        // Initialize the Timer
-        setupTimer();
 
         // Size the window and make it visible
         frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
         frmFoundation.setSize(1000, 600);// Window Sizing (Adjust later instead of Magic #)
         frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
         frmFoundation.setVisible(true);
-        frmFoundation.setResizable(false); // Unable to resize
+        frmFoundation.setResizable(true); // Changed to resize due to split-pane
     }
 
     /**
