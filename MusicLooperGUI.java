@@ -16,8 +16,7 @@ import java.util.logging.Logger;
  */
 public class MusicLooperGUI {
 
-    // A logger for logging messages for this class
-    private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
+
 
     // -- GUI Components --
     private JFrame frmFoundation;
@@ -33,12 +32,7 @@ public class MusicLooperGUI {
     private JCheckBox chkEnableLoop;
 
 
-    //A storage area for loaded audio data
-    private Clip clpAudioClip;
-    // Timer for updating timeline slider
-    private Timer tmrTimeline;
-    //Counter for repeats
-    private int intRepeatsRemaining;
+
     private boolean boolIsUserDragging;
 
     // -- File Browser Components --
@@ -46,9 +40,7 @@ public class MusicLooperGUI {
     private DefaultListModel<File> fileListModel;
     private JButton btnOpenFolder;
 
-    // -- Configuration Components --
-    private final Map<File, LoopConfig> loopConfigMap = new HashMap<>();
-    private File currentlyLoadedFile;
+
     private boolean updatingUI = false;
 
     /**
