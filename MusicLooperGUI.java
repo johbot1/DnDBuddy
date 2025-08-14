@@ -34,32 +34,6 @@ public class MusicLooperGUI {
     private boolean updatingUI = false;
 
     /**
-     * The main entry point for the application.
-     * It schedules the GUI creation on the Event Dispatch Thread.
-     *
-     * @param args Command-line arguments (not used).
-     */
-    public static void main(String[] args) {
-        // Swing applications should be run on the Event Dispatch Thread (EDT)
-        // to ensure thread safety for GUI components.
-        SwingUtilities.invokeLater(() -> {
-            try {
-                // Use the system's look and feel for a native appearance.
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                new MusicLooperGUI().initUI();
-            } catch (Exception e) {
-                // Log the exception with a severe level and show a user-friendly error dialog.
-//                LOGGER.log(Level.SEVERE, "An unexpected error occurred during GUI initialization.", e);
-//                JOptionPane.showMessageDialog(null,
-//                        "A critical error occurred and the application cannot start.\n" +
-//                                "Please check the logs for more details.",
-//                        "Application Startup Error",
-//                        JOptionPane.ERROR_MESSAGE);
-            }
-        });
-    }
-
-    /**
      * Initializes the main frame and all its UI components.
      */
     public void initUI() {
