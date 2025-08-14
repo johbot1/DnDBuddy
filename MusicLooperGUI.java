@@ -17,33 +17,26 @@ import java.util.logging.Logger;
  */
 public class MusicLooperGUI {
 
-
-
-    // -- GUI Components --
+    // --- UI Components ---
     private JFrame frmFoundation;
     private JLabel lblStatusLabel;
     private JLabel lblStartTime;
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
     private JButton btnPlay, btnPause, btnStop;
-
-    // -- Loop Control Components --
     private JTextField txtLoopStart, txtLoopEnd, txtLoopCount;
     private JButton btnSetLoopStart, btnSetLoopEnd;
     private JCheckBox chkEnableLoop;
-
-
-
-    private boolean boolIsUserDragging;
-
-    // -- File Browser Components --
     private JList<File> fileList;
     private DefaultListModel<File> fileListModel;
     private JButton btnOpenFolder;
 
-
-    private boolean updatingUI = false;
+    // --- Backend Service ---
     private AudioService audioService;
+
+    // --- State Flags ---
+    private boolean boolIsUserDragging = false;
+    private boolean updatingUI = false;
 
     /**
      * The main entry point for the application.
@@ -76,17 +69,7 @@ public class MusicLooperGUI {
      */
     public void initUI() {
         // This is the function that provides the current loop settings from the UI fields.
-        Supplier<LoopConfig> loopConfigProvider = () -> {
-            LoopConfig config = new LoopConfig();
-            config.loopStart = txtLoopStart.getText();
-            config.loopEnd = txtLoopEnd.getText();
-            try {
-                config.repeats = Integer.parseInt(txtLoopCount.getText());
-            } catch (NumberFormatException e) {
-                config.repeats = 1; // Default to 1 if text is invalid
-            }
-            return config;
-        };
+        Supplier<LoopConfig> loopConfigProvider = this::getCurrentConfigFromUI;
 
         // Create the instance of our audio engine, passing it all the necessary functions.
         this.audioService = new AudioService(
@@ -95,7 +78,7 @@ public class MusicLooperGUI {
                     if (!boolIsUserDragging) {
                         long currentSeconds = currentMicroseconds / 1_000_000;
                         sldrTimelineSlider.setValue((int) currentSeconds);
-                        lblStartTime.setText(AudioService.formatTime(currentMicroseconds));
+                        lblStartTime.setText(audioService.formatTime(currentMicroseconds));
                     }
                 },
                 // 2. The function to get the current loop settings
@@ -106,12 +89,11 @@ public class MusicLooperGUI {
                 () -> chkEnableLoop.setSelected(false)
         );
 
-        // Create the main window (JFrame)
+        // --- The rest of the UI setup is the same ---
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
-        frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE); // Close the window not the whole app
-        frmFoundation.setLayout(new BorderLayout(10, 10));
+        frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frmFoundation.setLayout(new BorderLayout());
 
-        // Add all the panels to the frame
         JPanel mainControlPanel = new JPanel(new BorderLayout(10, 10));
         mainControlPanel.add(createLoopControlsPanel(), BorderLayout.CENTER);
         mainControlPanel.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
@@ -123,58 +105,188 @@ public class MusicLooperGUI {
 
         frmFoundation.add(splitPane, BorderLayout.CENTER);
 
-        // Initial state for controls
         setPlaybackButtonsEnabled(false);
         setLoopControlsEnabled(false);
 
-        // Size the window and make it visible
-        frmFoundation.pack(); // Sizes the window to fit the preferred size of its subcomponents
-        frmFoundation.setSize(1000, 600);// Window Sizing (Adjust later instead of Magic #)
-        frmFoundation.setLocationRelativeTo(null); // Center the window on the screen
+        frmFoundation.setSize(1000, 600);
+        frmFoundation.setLocationRelativeTo(null);
         frmFoundation.setVisible(true);
-        frmFoundation.setResizable(true); // Changed to resize due to split-pane
+        frmFoundation.setResizable(true);
     }
 
     /**
      * Creates the file browser panel on the RIGHT side of the UI
-     *
-     * @return A JPanel containing the open folder button and a list of audio files
      */
     private JPanel pnlCreateFileBrowser() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Audio Files"));
 
-        //Button to open a folder
         btnOpenFolder = new JButton("Open Folder");
         btnOpenFolder.addActionListener(e -> openFolder());
         panel.add(btnOpenFolder, BorderLayout.NORTH);
 
-        //List to display the files
         fileListModel = new DefaultListModel<>();
         fileList = new JList<>(fileListModel);
         fileList.setCellRenderer(new FileNameRenderer());
 
-        //Listener to load the file when an item is selected
         fileList.addListSelectionListener(e -> {
-            //Prevents (hopefully) the event firing twice
             if (!e.getValueIsAdjusting()) {
                 File selectedFile = fileList.getSelectedValue();
                 if (selectedFile != null) {
-                    loadAudioFile(selectedFile);
+                    AudioService.AudioDetails details = audioService.loadFile(selectedFile);
+                    if (details != null) {
+                        updateUIWithAudioDetails(selectedFile.getName(), details);
+                    } else {
+                        JOptionPane.showMessageDialog(frmFoundation, "Could not load the selected audio file.", "Audio Load Error", JOptionPane.ERROR_MESSAGE);
+                        setPlaybackButtonsEnabled(false);
+                        setLoopControlsEnabled(false);
+                    }
                 }
             }
         });
 
-        //Put the list in a scrollable pane
         JScrollPane scrollPane = new JScrollPane(fileList);
         panel.add(scrollPane, BorderLayout.CENTER);
-
-        //Preferred size start out
         panel.setPreferredSize(new Dimension(200, 0));
-
         return panel;
     }
 
+    /**
+     * Updates all UI Components based on a loaded file
+     * @param fileName
+     * @param details
+     */
+    private void updateUIWithAudioDetails(String fileName, AudioService.AudioDetails details) {
+        long durationSeconds = details.durationMicroseconds / 1_000_000;
+        sldrTimelineSlider.setMaximum((int) durationSeconds);
+        lblEndTime.setText(audioService.formatTime(details.durationMicroseconds));
+        lblStatusLabel.setText("Loaded: " + fileName);
+
+        updatingUI = true;
+        txtLoopStart.setText(details.config.loopStart);
+        txtLoopEnd.setText(details.config.loopEnd);
+        txtLoopCount.setText(String.valueOf(details.config.repeats));
+        updatingUI = false;
+
+        audioService.stop(); // Reset player to a clean state
+        btnPlay.setText("Play");
+        setPlaybackButtonsEnabled(true);
+        setLoopControlsEnabled(true);
+    }
+
+    /**
+     * Gets the current loop settings from the UI fields into a LoopConfig
+     * @return
+     */
+    private LoopConfig getCurrentConfigFromUI() {
+        LoopConfig config = new LoopConfig();
+        config.loopStart = txtLoopStart.getText();
+        config.loopEnd = txtLoopEnd.getText();
+        try {
+            config.repeats = Integer.parseInt(txtLoopCount.getText());
+        } catch (NumberFormatException e) {
+            config.repeats = 1;
+        }
+        return config;
+    }
+
+    /**
+     * Sets the text of a target field to the current time on the timeline
+     */
+    private void setLoopPoint(JTextField targetField) {
+        long currentTime = audioService.getCurrentMicroseconds();
+        targetField.setText(audioService.formatTime(currentTime));
+    }
+
+    /**
+     * Creates the panel containing the Play, Pause, and Stop buttons.
+     *
+     * @return A JPanel with the playback action buttons.
+     */
+    private JPanel createButtonPanel() {
+        JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+
+        btnPlay = new JButton("Play");
+        btnPlay.addActionListener(e -> {
+            audioService.play();
+            btnPlay.setText("Resume");
+        });
+
+        btnPause = new JButton("Pause");
+        btnPause.addActionListener(e -> audioService.pause());
+
+        btnStop = new JButton("Stop");
+        btnStop.addActionListener(e -> {
+            audioService.stop();
+            btnPlay.setText("Play"); // Reset button text on stop
+        });
+
+        Dimension buttonSize = new Dimension(80, 30);
+        btnPlay.setPreferredSize(buttonSize);
+        btnPause.setPreferredSize(buttonSize);
+        btnStop.setPreferredSize(buttonSize);
+        pnlButtonContainer.add(btnPlay);
+        pnlButtonContainer.add(btnPause);
+        pnlButtonContainer.add(btnStop);
+        return pnlButtonContainer;
+    }
+
+    /**
+     * Creates the panel for the audio timeline, including the slider and time labels.
+     *
+     * @return A JPanel with the JSlider and time labels.
+     */
+    private JPanel createTimelinePanel() {
+        JPanel pnlTimeline = new JPanel(new BorderLayout(10, 0));
+        lblStartTime = new JLabel("00:00.000");
+        lblEndTime = new JLabel("00:00.000");
+        sldrTimelineSlider = new JSlider(0, 0, 0);
+
+        sldrTimelineSlider.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mousePressed(java.awt.event.MouseEvent e) { boolIsUserDragging = true; }
+            @Override
+            public void mouseReleased(java.awt.event.MouseEvent e) {
+                audioService.seek(sldrTimelineSlider.getValue() * 1_000_000L);
+                lblStartTime.setText(audioService.formatTime(audioService.getCurrentMicroseconds()));
+                boolIsUserDragging = false;
+            }
+        });
+        sldrTimelineSlider.addChangeListener(e -> {
+            if (boolIsUserDragging) {
+                lblStartTime.setText(audioService.formatTime(sldrTimelineSlider.getValue() * 1_000_000L));
+            }
+        });
+
+        pnlTimeline.add(lblStartTime, BorderLayout.WEST);
+        pnlTimeline.add(sldrTimelineSlider, BorderLayout.CENTER);
+        pnlTimeline.add(lblEndTime, BorderLayout.EAST);
+        return pnlTimeline;
+    }
+
+    /**
+     * Opens a JFileChooser to select a directory, then populates the file list
+     * with supported audio files found inside
+     */
+    private void openFolder() {
+        JFileChooser folderChooser = new JFileChooser();
+        folderChooser.setDialogTitle("Select Audio Folder");
+        folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        folderChooser.setAcceptAllFileFilterUsed(false);
+
+        if (folderChooser.showOpenDialog(frmFoundation) == JFileChooser.APPROVE_OPTION) {
+            File selectedFolder = folderChooser.getSelectedFile();
+            fileListModel.clear();
+            File[] audioFiles = selectedFolder.listFiles((dir, name) ->
+                    name.toLowerCase().endsWith(".wav") || name.toLowerCase().endsWith(".au")
+            );
+            if (audioFiles != null) {
+                for (File file : audioFiles) {
+                    fileListModel.addElement(file);
+                }
+            }
+        }
+    }
 
     /**
      * Creates the Central Panel for loop settings
@@ -188,56 +300,26 @@ public class MusicLooperGUI {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        SimpleDocumentListener sdlListener = e -> updateCurrentConfigFromUI();
+        SimpleDocumentListener listener = e -> {
+            if (!updatingUI) {
+                audioService.updateCurrentConfig(getCurrentConfigFromUI());
+            }
+        };
 
-        // -- Row 0: Loop Start --
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(new JLabel("Loop Start:"), gbc);
-        gbc.gridx = 1;
-        txtLoopStart = new JTextField("00:00.000", 8);
-        txtLoopStart.getDocument().addDocumentListener(sdlListener);
-        panel.add(txtLoopStart, gbc);
-        gbc.gridx = 2;
-        btnSetLoopStart = new JButton("Set");
-        btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart));
-        panel.add(btnSetLoopStart, gbc);
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Loop Start:"), gbc);
+        gbc.gridx = 1; txtLoopStart = new JTextField("00:00.000", 8); txtLoopStart.getDocument().addDocumentListener(listener); panel.add(txtLoopStart, gbc);
+        gbc.gridx = 2; btnSetLoopStart = new JButton("Set"); btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart)); panel.add(btnSetLoopStart, gbc);
 
-        // -- Row 1: Loop End --
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        panel.add(new JLabel("Loop End:"), gbc);
-        gbc.gridx = 1;
-        txtLoopEnd = new JTextField("00:00.000", 8);
-        txtLoopEnd.getDocument().addDocumentListener(sdlListener);
-        panel.add(txtLoopEnd, gbc);
-        gbc.gridx = 2;
-        btnSetLoopEnd = new JButton("Set");
-        btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd));
-        panel.add(btnSetLoopEnd, gbc);
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Loop End:"), gbc);
+        gbc.gridx = 1; txtLoopEnd = new JTextField("00:00.000", 8); txtLoopEnd.getDocument().addDocumentListener(listener); panel.add(txtLoopEnd, gbc);
+        gbc.gridx = 2; btnSetLoopEnd = new JButton("Set"); btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd)); panel.add(btnSetLoopEnd, gbc);
 
-        // -- Row 2: Repetitions --
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        panel.add(new JLabel("Repetitions:"), gbc);
-        gbc.gridx = 1;
-        txtLoopCount = new JTextField("1", 3);
-        txtLoopCount.getDocument().addDocumentListener(sdlListener);
-        panel.add(txtLoopCount, gbc);
+        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Repetitions:"), gbc);
+        gbc.gridx = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(listener); panel.add(txtLoopCount, gbc);
 
-        // -- Row 3: Enable Loops --
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 3;
-        chkEnableLoop = new JCheckBox("Enable Loop");
-        panel.add(chkEnableLoop, gbc);
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3; chkEnableLoop = new JCheckBox("Enable Loop"); panel.add(chkEnableLoop, gbc);
 
-
-        // -- Row 4: Status Label--
-        gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER);
-        panel.add(lblStatusLabel, gbc);
+        gbc.gridy = 4; gbc.fill = GridBagConstraints.HORIZONTAL; lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER); panel.add(lblStatusLabel, gbc);
 
         return panel;
     }
@@ -249,157 +331,12 @@ public class MusicLooperGUI {
      * @return A JPanel containing the timeline and playback buttons.
      */
     private JPanel createPlaybackControlsPanel() {
-        // Main container for all controls at the bottom
         JPanel pnlControlContainer = new JPanel(new BorderLayout());
         pnlControlContainer.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        // Add the timeline and the buttons to this container
         pnlControlContainer.add(createTimelinePanel(), BorderLayout.NORTH);
         pnlControlContainer.add(createButtonPanel(), BorderLayout.CENTER);
-
         return pnlControlContainer;
     }
-
-    /**
-     * Creates the panel containing the Play, Pause, and Stop buttons.
-     *
-     * @return A JPanel with the playback action buttons.
-     */
-    private JPanel createButtonPanel() {
-        // Panel for the buttons, using FlowLayout to center them
-        JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-
-        btnPlay = new JButton("Play");
-        btnPause = new JButton("Pause");
-        btnStop = new JButton("Stop");
-
-        //Add Action Listeners
-        btnPlay.addActionListener(e -> playAudio());
-        btnPause.addActionListener(e -> pauseAudio());
-        btnStop.addActionListener(e -> stopAudio());
-
-        // Set preferred sizes to make buttons uniform
-        Dimension buttonSize = new Dimension(80, 30);
-        btnPlay.setPreferredSize(buttonSize);
-        btnPause.setPreferredSize(buttonSize);
-        btnStop.setPreferredSize(buttonSize);
-
-        pnlButtonContainer.add(btnPlay);
-        pnlButtonContainer.add(btnPause);
-        pnlButtonContainer.add(btnStop);
-
-        return pnlButtonContainer;
-    }
-
-    /**
-     * Creates the panel for the audio timeline, including the slider and time labels.
-     *
-     * @return A JPanel with the JSlider and time labels.
-     */
-    private JPanel createTimelinePanel() {
-        // Panel for the timeline slider and labels
-        JPanel pnlTimeline = new JPanel(new BorderLayout(10, 0));
-
-        // Labels to show current time and total duration
-        lblStartTime = new JLabel("0:00");
-        lblEndTime = new JLabel("0:00"); // Placeholder duration
-
-        // The slider to represent the song's progress
-        // Set the min/max values dynamically when a song is loaded.
-        sldrTimelineSlider = new JSlider(0, 244); // 4 minutes * 60 + 4 seconds = 244
-        sldrTimelineSlider.setValue(0);
-
-        // A Listener to handle user clicking and dragging the slider
-        sldrTimelineSlider.addMouseListener(new java.awt.event.MouseAdapter() {
-            @Override
-            public void mousePressed(java.awt.event.MouseEvent e) {
-                boolIsUserDragging = true; // User has taken control
-            }
-
-            @Override
-            public void mouseReleased(java.awt.event.MouseEvent e) {
-                if (clpAudioClip != null) {
-                    int intNewPosition = sldrTimelineSlider.getValue();
-                    //Jump the audio to the new position (converting sec back to ms)
-                    clpAudioClip.setMicrosecondPosition(intNewPosition * 1_000_000L);
-                }
-                boolIsUserDragging = false; // User has released control
-            }
-        });
-
-        // A Listener to update the time label WHILE dragging
-        sldrTimelineSlider.addChangeListener(e -> {
-            if (boolIsUserDragging) {
-                lblStartTime.setText(formatTime(sldrTimelineSlider.getValue()));
-            }
-        });
-
-        pnlTimeline.add(lblStartTime, BorderLayout.WEST);
-        pnlTimeline.add(sldrTimelineSlider, BorderLayout.CENTER);
-        pnlTimeline.add(lblEndTime, BorderLayout.EAST);
-
-        return pnlTimeline;
-    }
-
-
-
-    /**
-     * Loads the selected audio file into the player.
-     *
-     * @param fileToLoad The audio file to load.
-     */
-    private void loadAudioFile(File fileToLoad) {
-        this.currentlyLoadedFile = fileToLoad;
-        try {
-            // If a clip is already open, close it to free up resources.
-            if (clpAudioClip != null) clpAudioClip.close();
-
-
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(fileToLoad);
-            clpAudioClip = AudioSystem.getClip();
-            // Adds a listener to handle events like STOP (when a song ends)
-            // When naturally finishing, stop the timer and reset UI
-            clpAudioClip.addLineListener(event -> {
-                if (event.getType() == LineEvent.Type.STOP &&
-                        clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
-                    stopAudio();
-                }
-            });
-            clpAudioClip.open(audioStream);
-
-            // Update GUI with new audio file info
-            long durationMicroseconds = clpAudioClip.getMicrosecondLength();
-            sldrTimelineSlider.setMaximum((int) (durationMicroseconds / 1_000_000));
-            lblEndTime.setText(formatTime(durationMicroseconds));
-            lblStatusLabel.setText("Loaded: " + fileToLoad.getName());
-
-            //Check for existing configs. If none exist, create new
-            LoopConfig config = loopConfigMap.computeIfAbsent(fileToLoad, k -> new LoopConfig());
-
-            //Update the UI with stored or new config properties
-            updatingUI = true;
-            txtLoopStart.setText(config.loopStart);
-            txtLoopEnd.setText(config.loopEnd);
-            txtLoopCount.setText(String.valueOf(config.repeats));
-            updatingUI = false;
-
-            stopAudio(); // Reset player to a clean state
-            setPlaybackButtonsEnabled(true);
-            setLoopControlsEnabled(true);
-
-            LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", fileToLoad.getAbsolutePath());
-
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
-            LOGGER.log(Level.SEVERE, "Error loading audio file", e);
-            JOptionPane.showMessageDialog(frmFoundation,
-                    "Could not load the audio file: " + e.getMessage(),
-                    "Audio Load Error",
-                    JOptionPane.ERROR_MESSAGE);
-            setPlaybackButtonsEnabled(false);
-            setLoopControlsEnabled(false);
-        }
-    }
-
 
     /**
      * Enables or disables the playback control buttons
@@ -424,74 +361,5 @@ public class MusicLooperGUI {
         btnSetLoopStart.setEnabled(enabled);
         btnSetLoopEnd.setEnabled(enabled);
         chkEnableLoop.setEnabled(enabled);
-    }
-
-    /**
-     * Sets the text of a target field to the current time on the timeline
-     *
-     * @param targetField The JTextField to target
-     */
-    private void setLoopPoint(JTextField targetField) {
-        if (clpAudioClip != null) {
-            long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
-            targetField.setText(formatTime(currentMicroSeconds));
-
-            //Saves the change immediately
-            updateCurrentConfigFromUI();
-        }
-    }
-
-
-    /**
-     * Opens a JFileChooser to select a directory, then populates the file list
-     * with supported audio files found inside
-     */
-    private void openFolder() {
-        JFileChooser folderChooser = new JFileChooser();
-        folderChooser.setDialogTitle("Select Audio Folder");
-        folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY); //Only allow folders to be selected
-        folderChooser.setAcceptAllFileFilterUsed(false); //Disables "All Files" option;
-
-        if (folderChooser.showOpenDialog(frmFoundation) == JFileChooser.APPROVE_OPTION) {
-            File selectedFolder = folderChooser.getSelectedFile();
-
-            //Clear out the old list
-            fileListModel.clear();
-
-            //Find all .wav and .au files within the selected folder
-            File[] audioFiles = selectedFolder.listFiles((dir, name) ->
-                    name.toLowerCase().endsWith(".wav") || name.toLowerCase().endsWith(".au")
-            );
-
-            if (audioFiles != null) {
-                for (File file : audioFiles) {
-                    fileListModel.addElement(file);
-                }
-                LOGGER.log(Level.INFO, "Found {0} audio files in {1}", new Object[]{audioFiles.length, selectedFolder.getAbsolutePath()});
-            }
-        }
-    }
-
-    /**
-     * Saves current UI values to the LoopConfig map
-     * for the current file
-     */
-    private void updateCurrentConfigFromUI() {
-        if (currentlyLoadedFile != null) {
-            // Get the config for the current file (SHOULD already exist)
-            LoopConfig config = loopConfigMap.get(currentlyLoadedFile);
-            if (updatingUI) return; // Do not save the changes if UI is actively being updated programatically
-
-            if (config != null) {
-                config.loopStart = txtLoopStart.getText();
-                config.loopEnd = txtLoopEnd.getText();
-                try {
-                    config.repeats = Integer.parseInt(txtLoopCount.getText());
-                } catch (NumberFormatException e) {
-                    //[FIX LATER] If user says something invalid ignore for the moment
-                    // The Play button already defaults to "1" for this
-                }
-            }
-        }
     }
 }

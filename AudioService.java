@@ -1,6 +1,7 @@
 import javax.sound.sampled.*;
 import javax.swing.Timer;
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -27,6 +28,16 @@ public class AudioService {
     private final Supplier<LoopConfig> loopConfigProvider;
     private final Supplier<Boolean> isLoopEnabledProvider;
     private final Runnable onLoopFinishCallback;
+
+    public static class AudioDetails {
+        public final long durationMicroseconds;
+        public final LoopConfig config;
+
+        public AudioDetails(long durationMicroseconds, LoopConfig config) {
+            this.durationMicroseconds = durationMicroseconds;
+            this.config = config;
+        }
+    }
 
     /**
      * Constructor for the AudioService.
@@ -83,6 +94,94 @@ public class AudioService {
         });
     }
 
+    public void play() {
+        if (clpAudioClip != null) {
+            if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
+                LoopConfig config = loopConfigProvider.get();
+                intRepeatsRemaining = config.repeats;
+                LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
+            }
+            clpAudioClip.start();
+            tmrTimeline.start();
+            LOGGER.info("Playback BEGIN");
+        }
+    }
+
+    public void pause() {
+        if (clpAudioClip != null && clpAudioClip.isRunning()) {
+            clpAudioClip.stop();
+            tmrTimeline.stop();
+            LOGGER.info("Playback PAUSED");
+        }
+    }
+
+    public void stop() {
+        if (clpAudioClip != null) {
+            clpAudioClip.stop();
+            clpAudioClip.setFramePosition(0);
+            tmrTimeline.stop();
+            onTimeUpdate.accept(0L); // Tell GUI to reset its time display to 0
+            intRepeatsRemaining = 0;
+            LOGGER.info("Playback stopped and reset.");
+        }
+    }
+
+    public void seek(long microseconds) {
+        if (clpAudioClip != null) {
+            clpAudioClip.setMicrosecondPosition(microseconds);
+        }
+    }
+
+    public long getCurrentMicroseconds() {
+        if (clpAudioClip != null) {
+            return clpAudioClip.getMicrosecondPosition();
+        }
+        return 0;
+    }
+
+    // -- FILE + CONFIG Logic
+    /**
+     * Loads the selected audio file, retrieving its loop config if it exists.
+     * @param fileToLoad The file to load.
+     * @return An AudioDetails object on success, or null on failure.
+     */
+    public AudioDetails loadFile(File fileToLoad) {
+        this.currentlyLoadedFile = fileToLoad;
+        try {
+            if (clpAudioClip != null) clpAudioClip.close();
+
+            AudioInputStream audioStream = AudioSystem.getAudioInputStream(fileToLoad);
+            clpAudioClip = AudioSystem.getClip();
+
+            clpAudioClip.addLineListener(event -> {
+                if (event.getType() == LineEvent.Type.STOP && clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
+                    stop(); // This error is now fixed!
+                }
+            });
+
+            clpAudioClip.open(audioStream);
+            LOGGER.log(Level.INFO, "Successfully loaded audio file: {0}", fileToLoad.getAbsolutePath());
+            LoopConfig config = loopConfigMap.computeIfAbsent(fileToLoad, k -> new LoopConfig());
+            return new AudioDetails(clpAudioClip.getMicrosecondLength(), config);
+
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            LOGGER.log(Level.SEVERE, "Error loading audio file", e);
+            this.currentlyLoadedFile = null;
+            return null;
+        }
+    }
+
+    /**
+     * Saves the current UI loop settings to the in-memory map.
+     * @param config The new configuration to save for the current file.
+     */
+    public void updateCurrentConfig(LoopConfig config) {
+        if (currentlyLoadedFile != null) {
+            loopConfigMap.put(currentlyLoadedFile, config);
+        }
+    }
+
+    // -- Utility Methods --
     /**
      * Parses a time string (MM:SS) into total seconds
      *
@@ -96,34 +195,23 @@ public class AudioService {
                 long minutes = Long.parseLong(parts[0]);
                 long seconds = 0;
                 long milliseconds = 0;
-
                 String secondPart = parts[1];
                 if (secondPart.contains(".")) {
                     String[] secParts = secondPart.split("\\.");
                     seconds = Long.parseLong(secParts[0]);
-
-                    // Handle user-typed milliseconds of varying length (e.g., .9, .90, .900)
                     String msString = secParts[1];
-                    if (msString.length() > 3) { // Truncate if too long
-                        msString = msString.substring(0, 3);
-                    }
-                    while (msString.length() < 3) { // Pad with zeros if too short
-                        msString += "0";
-                    }
+                    if (msString.length() > 3) msString = msString.substring(0, 3);
+                    while (msString.length() < 3) msString += "0";
                     milliseconds = Long.parseLong(msString);
-
                 } else {
-                    // No milliseconds, just parse the seconds
                     seconds = Long.parseLong(secondPart);
                 }
-
-                // Convert everything to microseconds
                 return (minutes * 60 * 1_000_000L) + (seconds * 1_000_000L) + (milliseconds * 1000L);
             }
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Could not parse time format: " + timeString, e);
         }
-        return -1; // Return -1 on failure to prevent accidental looping at 0
+        return -1;
     }
 
     /**
@@ -132,7 +220,7 @@ public class AudioService {
      * @param totalMicroSeconds The duration in Seconds
      * @return A properly formatted string
      */
-    public static String formatTime(long totalMicroSeconds) {
+    public String formatTime(long totalMicroSeconds) {
         long totalSeconds = totalMicroSeconds / 1_000_000;
         long minutes = totalSeconds / 60;
         long seconds = totalSeconds % 60;
@@ -141,60 +229,4 @@ public class AudioService {
     }
 
 
-
-    /**
-     * Starts playback of currently loaded audio clip
-     */
-    private void playAudio() {
-        if (clpAudioClip != null) {
-            // If loop is enabled, start the repeat counter
-            if (chkEnableLoop.isSelected()) {
-                try {
-                    intRepeatsRemaining = Integer.parseInt(txtLoopCount.getText());
-                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
-                } catch (NumberFormatException r) {
-                    LOGGER.log(Level.WARNING, "Invalid Repeat count. Defaulting to 1");
-                    intRepeatsRemaining = 1;
-                    txtLoopCount.setText("1");
-                }
-            }
-            clpAudioClip.start();
-            tmrTimeline.start();
-            btnPlay.setText("Resume");
-            LOGGER.info("Playback BEGIN");
-        }
-    }
-
-    /**
-     * Pauses currently loaded audio clip
-     */
-    private void pauseAudio() {
-        if (clpAudioClip != null && clpAudioClip.isRunning()) {
-            clpAudioClip.stop();
-            tmrTimeline.stop();
-            LOGGER.info("Playback PAUSED");
-        }
-    }
-
-    /**
-     * Stops currently loaded audio clip
-     */
-    private void stopAudio() {
-        if (clpAudioClip != null) {
-            // Stop the clip first
-            clpAudioClip.stop();
-            // Reset its position to the beginning
-            clpAudioClip.setFramePosition(0);
-            // Stop the timer that updates the slider
-            tmrTimeline.stop();
-            // Reset the slider and time label to the start
-            sldrTimelineSlider.setValue(0);
-            lblStartTime.setText("0:00");
-            btnPlay.setText("Play");
-            // Reset the Loop state
-            chkEnableLoop.setSelected(false);
-            //loopRepetitionRemaining = 0;
-            LOGGER.info("Playback stopped and reset.");
-        }
-    }
 }
