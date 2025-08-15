@@ -29,15 +29,13 @@ public class AudioService {
     private final Supplier<Boolean> isLoopEnabledProvider;
     private final Runnable onLoopFinishCallback;
 
-    public static class AudioDetails {
-        public final long durationMicroseconds;
-        public final LoopConfig config;
-
-        public AudioDetails(long durationMicroseconds, LoopConfig config) {
-            this.durationMicroseconds = durationMicroseconds;
-            this.config = config;
-        }
-    }
+    /**
+     * The information pertaining to a specified Audio file
+     *
+     * @param durationMicroseconds How long the file lasts in microseconds
+     * @param config               Any applied loop configuration
+     */
+    public record AudioDetails(long durationMicroseconds, LoopConfig config) {}
 
     /**
      * Constructor for the AudioService.
@@ -53,6 +51,7 @@ public class AudioService {
         this.onLoopFinishCallback = onLoopFinishCallback;
         this.setupTimer();
     }
+
     /**
      * Sets up the Swing Timer to update the GUI every second during playback.
      */
@@ -63,20 +62,11 @@ public class AudioService {
 
                 onTimeUpdate.accept(currentMicroSeconds);
 
-//                // Only update the slider pos if the user isn't dragging it
-//                if (!boolIsUserDragging) {
-//                    long currentSeconds = currentMicroSeconds / 1_000_000;
-//                    sldrTimelineSlider.setValue((int) currentSeconds);
-//                    lblStartTime.setText(formatTime(currentMicroSeconds));
-//                }
-
-
                 // Check if looping is enabled by calling the provider function
                 if (isLoopEnabledProvider.get()) {
                     // Get the current settings from the GUI via the provider
                     LoopConfig currentConfig = loopConfigProvider.get();
                     long loopEndMicro = parseTime(currentConfig.loopEnd);
-
                     if (currentMicroSeconds >= loopEndMicro) {
                         if (intRepeatsRemaining > 0) {
                             intRepeatsRemaining--;
@@ -94,6 +84,9 @@ public class AudioService {
         });
     }
 
+    /**
+     * Starts the timeline, and the audio stream simultaneously
+     */
     public void play() {
         if (clpAudioClip != null) {
             if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
@@ -107,6 +100,9 @@ public class AudioService {
         }
     }
 
+    /**
+     * Halts both the timeline and the audio stream
+     */
     public void pause() {
         if (clpAudioClip != null && clpAudioClip.isRunning()) {
             clpAudioClip.stop();
@@ -115,6 +111,9 @@ public class AudioService {
         }
     }
 
+    /**
+     * Stops the currently playing audio file
+     */
     public void stop() {
         if (clpAudioClip != null) {
             clpAudioClip.stop();
@@ -126,12 +125,20 @@ public class AudioService {
         }
     }
 
+    /**
+     * Allows a user to use the timeline to scrub through the loaded audio file
+     * @param microseconds The play head position described in microseconds
+     */
     public void seek(long microseconds) {
         if (clpAudioClip != null) {
             clpAudioClip.setMicrosecondPosition(microseconds);
         }
     }
 
+    /**
+     * Grabs the current microsecond position of a playing audio file
+     * @return The microsecond position, or 0 if there's an issue with the file
+     */
     public long getCurrentMicroseconds() {
         if (clpAudioClip != null) {
             return clpAudioClip.getMicrosecondPosition();
@@ -227,6 +234,4 @@ public class AudioService {
         long milliseconds = (totalMicroSeconds / 1000) % 1000;
         return String.format("%02d:%02d.%03d", minutes, seconds, milliseconds);
     }
-
-
 }

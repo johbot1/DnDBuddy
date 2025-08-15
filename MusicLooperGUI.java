@@ -1,4 +1,3 @@
-import javax.sound.sampled.*;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
@@ -42,7 +41,7 @@ public class MusicLooperGUI {
 
         // Create the instance of our audio engine, passing it all the necessary functions.
         this.audioService = new AudioService(
-                // 1. The function to update the time display
+                // 1. Update the time display
                 currentMicroseconds -> {
                     if (!boolIsUserDragging) {
                         long currentSeconds = currentMicroseconds / 1_000_000;
@@ -50,15 +49,15 @@ public class MusicLooperGUI {
                         lblStartTime.setText(audioService.formatTime(currentMicroseconds));
                     }
                 },
-                // 2. The function to get the current loop settings
+                // 2. Get the current loop settings
                 loopConfigProvider,
-                // 3. The function to check if the loop is enabled
+                // 3. Check if the loop is enabled
                 () -> chkEnableLoop.isSelected(),
-                // 4. The function to run when looping finishes
+                // 4. Run when looping finishes
                 () -> chkEnableLoop.setSelected(false)
         );
 
-        // --- The rest of the UI setup is the same ---
+        // --- UI Setup ---
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
         frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frmFoundation.setLayout(new BorderLayout());
@@ -122,19 +121,19 @@ public class MusicLooperGUI {
 
     /**
      * Updates all UI Components based on a loaded file
-     * @param fileName
-     * @param details
+     * @param fileName The name of the selected audio file
+     * @param details Details such as ms length and configuration
      */
     private void updateUIWithAudioDetails(String fileName, AudioService.AudioDetails details) {
-        long durationSeconds = details.durationMicroseconds / 1_000_000;
+        long durationSeconds = details.durationMicroseconds() / 1_000_000;
         sldrTimelineSlider.setMaximum((int) durationSeconds);
-        lblEndTime.setText(audioService.formatTime(details.durationMicroseconds));
+        lblEndTime.setText(audioService.formatTime(details.durationMicroseconds()));
         lblStatusLabel.setText("Loaded: " + fileName);
 
         updatingUI = true;
-        txtLoopStart.setText(details.config.loopStart);
-        txtLoopEnd.setText(details.config.loopEnd);
-        txtLoopCount.setText(String.valueOf(details.config.repeats));
+        txtLoopStart.setText(details.config().loopStart);
+        txtLoopEnd.setText(details.config().loopEnd);
+        txtLoopCount.setText(String.valueOf(details.config().repeats));
         updatingUI = false;
 
         audioService.stop(); // Reset player to a clean state
@@ -145,7 +144,7 @@ public class MusicLooperGUI {
 
     /**
      * Gets the current loop settings from the UI fields into a LoopConfig
-     * @return
+     * @return Returns a configuration defined by UI elements
      */
     private LoopConfig getCurrentConfigFromUI() {
         LoopConfig config = new LoopConfig();

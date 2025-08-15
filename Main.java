@@ -20,7 +20,6 @@ public class Main {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
                 createMainMenu();
             } catch (Exception e) {
-                e.printStackTrace();
                 //Show an Error Dialogue if the menu can't be created
                 JOptionPane.showMessageDialog(null,
                         "A critical error occured on startup",
