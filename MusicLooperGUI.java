@@ -245,9 +245,10 @@ public class MusicLooperGUI {
         if (folderChooser.showOpenDialog(frmFoundation) == JFileChooser.APPROVE_OPTION) {
             File selectedFolder = folderChooser.getSelectedFile();
             fileListModel.clear();
-            File[] audioFiles = selectedFolder.listFiles((dir, name) ->
-                    name.toLowerCase().endsWith(".wav") || name.toLowerCase().endsWith(".au")
-            );
+            File[] audioFiles = selectedFolder.listFiles((dir, name) -> {
+                String lowerName = name.toLowerCase();
+                return lowerName.endsWith(".wav") || lowerName.endsWith(".au") || lowerName.endsWith(".mp3");
+            });
             if (audioFiles != null) {
                 for (File file : audioFiles) {
                     fileListModel.addElement(file);
