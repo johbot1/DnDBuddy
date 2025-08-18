@@ -1,7 +1,12 @@
+import javazoom.jl.decoder.Bitstream;
+import javazoom.jl.decoder.Header;
+
 import javax.sound.sampled.*;
 import javax.swing.Timer;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -157,12 +162,40 @@ public class AudioService {
         try {
             if (clpAudioClip != null) clpAudioClip.close();
 
-            AudioInputStream audioStream = AudioSystem.getAudioInputStream(fileToLoad);
+            AudioInputStream audioStream;
+            String fileName = fileToLoad.getName().toLowerCase();
+
+            // --- THIS IS THE NEW LOGIC ---
+            if (fileName.endsWith(".mp3")) {
+                // Manually decode the MP3 to a PCM AudioInputStream
+                InputStream fileInputStream = new FileInputStream(fileToLoad);
+                Bitstream bitstream = new Bitstream(fileInputStream);
+                Header header = bitstream.readFrame();
+
+                // Get audio format from MP3 header
+                int channels = (header.mode() == Header.SINGLE_CHANNEL) ? 1 : 2;
+                AudioFormat decodedFormat = new AudioFormat(
+                        header.frequency(),
+                        16, // Bit depth
+                        channels,
+                        true, // Signed
+                        false // Big-endian
+                );
+
+                // Create an AudioInputStream from the decoded MP3 stream
+                audioStream = new AudioInputStream(fileInputStream, decodedFormat, -1);
+
+            } else {
+                // For WAV, AU, etc., use the standard method
+                audioStream = AudioSystem.getAudioInputStream(fileToLoad);
+            }
+            // --- END OF NEW LOGIC ---
+
             clpAudioClip = AudioSystem.getClip();
 
             clpAudioClip.addLineListener(event -> {
                 if (event.getType() == LineEvent.Type.STOP && clpAudioClip.getMicrosecondLength() == clpAudioClip.getMicrosecondPosition()) {
-                    stop(); // This error is now fixed!
+                    stop();
                 }
             });
 
@@ -171,7 +204,7 @@ public class AudioService {
             LoopConfig config = loopConfigMap.computeIfAbsent(fileToLoad, k -> new LoopConfig());
             return new AudioDetails(clpAudioClip.getMicrosecondLength(), config);
 
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+        } catch (Exception e) { // Catching generic Exception as JLayer throws some
             LOGGER.log(Level.SEVERE, "Error loading audio file", e);
             this.currentlyLoadedFile = null;
             return null;
