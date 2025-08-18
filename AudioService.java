@@ -2,6 +2,8 @@ import javazoom.jl.decoder.Bitstream;
 import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.SampleBuffer;
+import java.io.*;
+import java.util.Properties;
 
 import javax.sound.sampled.*;
 import javax.swing.*;
@@ -51,7 +53,9 @@ public class AudioService {
      * @param isLoopEnabledProvider A function that returns true if the loop checkbox is enabled.
      * @param onLoopFinishCallback  A function to call when the looping finishes.
      */
-    public AudioService(Component parentComponent, DefaultListModel<File> fileListModel, Consumer<Long> onTimeUpdate, Supplier<LoopConfig> loopConfigProvider, Supplier<Boolean> isLoopEnabledProvider, Runnable onLoopFinishCallback) {
+    public AudioService(Component parentComponent, DefaultListModel<File> fileListModel,
+                        Consumer<Long> onTimeUpdate, Supplier<LoopConfig> loopConfigProvider,
+                        Supplier<Boolean> isLoopEnabledProvider, Runnable onLoopFinishCallback) {
         this.parentComponent = parentComponent;
         this.fileListModel = fileListModel;
         this.onTimeUpdate = onTimeUpdate;
@@ -62,112 +66,14 @@ public class AudioService {
     }
 
     /**
-     * Sets up the Swing Timer to update the GUI every second during playback.
-     */
-    private void setupTimer() {
-        tmrTimeline = new Timer(50, e -> {
-            if (clpAudioClip != null && clpAudioClip.isRunning()) {
-                long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
-
-                onTimeUpdate.accept(currentMicroSeconds);
-
-                // Check if looping is enabled by calling the provider function
-                if (isLoopEnabledProvider.get()) {
-                    // Get the current settings from the GUI via the provider
-                    LoopConfig currentConfig = loopConfigProvider.get();
-                    long loopEndMicro = parseTime(currentConfig.loopEnd);
-                    if (currentMicroSeconds >= loopEndMicro) {
-
-                        if (currentConfig.isInfinite) {
-                            // If infinite, just jump back to the start.
-                            long loopStartMicro = parseTime(currentConfig.loopStart);
-                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
-                            LOGGER.log(Level.INFO, "Looping infinitely.");
-                        } else if (intRepeatsRemaining > 0) {
-                            // If finite, decrement and jump back.
-                            intRepeatsRemaining--;
-                            LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
-                            long loopStartMicro = parseTime(currentConfig.loopStart);
-                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
-                        } else {
-                            // Otherwise, the loop is finished.
-                            onLoopFinishCallback.run();
-                            LOGGER.info("Looping has finished.");
-                        }
-                    }
-                }
-            }
-        });
-    }
-
-    /**
-     * Starts the timeline, and the audio stream simultaneously
-     */
-    public void play() {
-        if (clpAudioClip != null) {
-            if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
-                LoopConfig config = loopConfigProvider.get();
-                // Only set the repeat counter if the loop is NOT infinite
-                if (!config.isInfinite) {
-                    intRepeatsRemaining = config.repeats;
-                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
-                } else {
-                    LOGGER.log(Level.INFO, "Starting infinite loop.");
-                }
-            }
-            clpAudioClip.start();
-            tmrTimeline.start();
-            LOGGER.info("Playback BEGIN");
-        }
-    }
-
-    /**
-     * Halts both the timeline and the audio stream
-     */
-    public void pause() {
-        if (clpAudioClip != null && clpAudioClip.isRunning()) {
-            clpAudioClip.stop();
-            tmrTimeline.stop();
-            LOGGER.info("Playback PAUSED");
-        }
-    }
-
-    /**
-     * Stops the currently playing audio file
-     */
-    public void stop() {
-        if (clpAudioClip != null) {
-            clpAudioClip.stop();
-            clpAudioClip.setFramePosition(0);
-            tmrTimeline.stop();
-            onTimeUpdate.accept(0L); // Tell GUI to reset its time display to 0
-            intRepeatsRemaining = 0;
-            LOGGER.info("Playback stopped and reset.");
-        }
-    }
-
-    /**
-     * Allows a user to use the timeline to scrub through the loaded audio file
+     * The information pertaining to a specified Audio file
      *
-     * @param microseconds The play head position described in microseconds
+     * @param durationMicroseconds How long the file lasts in microseconds
+     * @param config               Any applied loop configuration
      */
-    public void seek(long microseconds) {
-        if (clpAudioClip != null) {
-            clpAudioClip.setMicrosecondPosition(microseconds);
-        }
+    public record AudioDetails(long durationMicroseconds, LoopConfig config) {
     }
 
-    /**
-     * Grabs the current microsecond position of a playing audio file
-     *
-     * @return The microsecond position, or 0 if there's an issue with the file
-     */
-    public long getCurrentMicroseconds() {
-        if (clpAudioClip != null) {
-            return clpAudioClip.getMicrosecondPosition();
-        }
-        return 0;
-    }
 
     /**
      * Loads the selected audio file, retrieving its loop config if it exists.
@@ -210,7 +116,7 @@ public class AudioService {
         }
     }
 
-    // -- FILE + CONFIG Logic
+    // -- File + Config Logic
 
     /**
      * Converts an MP3 file to a PCM AudioInputStream using JLayer
@@ -300,6 +206,141 @@ public class AudioService {
     }
 
     /**
+     * Opens a folder, loads its configs, and populates the file list.
+     */
+    public void openFolder() {
+        JFileChooser folderChooser = new JFileChooser();
+        folderChooser.setDialogTitle("Select Audio Folder");
+        folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+        folderChooser.setAcceptAllFileFilterUsed(false);
+
+        if (folderChooser.showOpenDialog(parentComponent) == JFileChooser.APPROVE_OPTION) {
+            currentConfigFolder = folderChooser.getSelectedFile();
+            loadConfigsFromFile(); // Load saved settings from the folder
+
+            fileListModel.clear();
+            File[] audioFiles = currentConfigFolder.listFiles((dir, name) -> {
+                String lowerName = name.toLowerCase();
+                return lowerName.endsWith(".wav") || lowerName.endsWith(".au") || lowerName.endsWith(".mp3");
+            });
+
+            if (audioFiles != null) {
+                for (File file : audioFiles) {
+                    fileListModel.addElement(file);
+                }
+                LOGGER.log(Level.INFO, "Found {0} audio files in {1}", new Object[]{audioFiles.length, currentConfigFolder.getAbsolutePath()});
+            }
+        }
+    }
+
+    /**
+     * Loads loop configurations from the .properties file in the current folder.
+     */
+    private void loadConfigsFromFile() {
+        loopConfigMap.clear();
+        File configFile = new File(currentConfigFolder, CONFIG_FILE_NAME);
+        if (!configFile.exists()) {
+            LOGGER.info("No config file found. Starting fresh.");
+            return;
+        }
+
+        Properties props = new Properties();
+        try (InputStream input = new FileInputStream(configFile)) {
+            props.load(input);
+            for (String key : props.stringPropertyNames()) {
+                File audioFile = new File(currentConfigFolder, key);
+                LoopConfig config = LoopConfig.fromString(props.getProperty(key));
+                loopConfigMap.put(audioFile, config);
+            }
+            LOGGER.info("Successfully loaded " + props.size() + " loop configurations.");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error loading config file", e);
+        }
+    }
+
+    /**
+     * Saves the current in-memory loop configurations to the .properties file.
+     */
+    private void saveConfigsToFile() {
+        if (currentConfigFolder == null) return;
+
+        File configFile = new File(currentConfigFolder, CONFIG_FILE_NAME);
+        Properties props = new Properties();
+
+        for (Map.Entry<File, LoopConfig> entry : loopConfigMap.entrySet()) {
+            // Use the relative file name as the key
+            props.setProperty(entry.getKey().getName(), entry.getValue().toString());
+        }
+
+        try (OutputStream output = new FileOutputStream(configFile)) {
+            props.store(output, "Groove Buddy Loop Configurations");
+            LOGGER.info("Successfully saved configurations to file.");
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error saving config file", e);
+        }
+    }
+
+    // -- Playback Methods --
+    /**
+     * Starts the timeline, and the audio stream simultaneously
+     */
+    public void play() {
+        if (clpAudioClip != null) {
+            if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
+                LoopConfig config = loopConfigProvider.get();
+                // Only set the repeat counter if the loop is NOT infinite
+                if (!config.isInfinite) {
+                    intRepeatsRemaining = config.repeats;
+                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
+                } else {
+                    LOGGER.log(Level.INFO, "Starting infinite loop.");
+                }
+            }
+            clpAudioClip.start();
+            tmrTimeline.start();
+            LOGGER.info("Playback BEGIN");
+        }
+    }
+
+    /**
+     * Halts both the timeline and the audio stream
+     */
+    public void pause() {
+        if (clpAudioClip != null && clpAudioClip.isRunning()) {
+            clpAudioClip.stop();
+            tmrTimeline.stop();
+            LOGGER.info("Playback PAUSED");
+        }
+    }
+
+    /**
+     * Stops the currently playing audio file
+     */
+    public void stop() {
+        if (clpAudioClip != null) {
+            clpAudioClip.stop();
+            clpAudioClip.setFramePosition(0);
+            tmrTimeline.stop();
+            onTimeUpdate.accept(0L); // Tell GUI to reset its time display to 0
+            intRepeatsRemaining = 0;
+            LOGGER.info("Playback stopped and reset.");
+        }
+    }
+
+    /**
+     * Allows a user to use the timeline to scrub through the loaded audio file
+     *
+     * @param microseconds The play head position described in microseconds
+     */
+    public void seek(long microseconds) {
+        if (clpAudioClip != null) {
+            clpAudioClip.setMicrosecondPosition(microseconds);
+        }
+    }
+
+
+    // -- Utility Methods --
+    /**
      * Parses a time string (MM:SS) into total seconds
      *
      * @param timeString The String to parse
@@ -331,8 +372,6 @@ public class AudioService {
         return -1;
     }
 
-    // -- Utility Methods --
-
     /**
      * Formats a duration in total seconds to an MM:SS string
      *
@@ -348,11 +387,53 @@ public class AudioService {
     }
 
     /**
-     * The information pertaining to a specified Audio file
-     *
-     * @param durationMicroseconds How long the file lasts in microseconds
-     * @param config               Any applied loop configuration
+     * Sets up the Swing Timer to update the GUI every second during playback.
      */
-    public record AudioDetails(long durationMicroseconds, LoopConfig config) {
+    private void setupTimer() {
+        tmrTimeline = new Timer(50, e -> {
+            if (clpAudioClip != null && clpAudioClip.isRunning()) {
+                long currentMicroSeconds = clpAudioClip.getMicrosecondPosition();
+
+                onTimeUpdate.accept(currentMicroSeconds);
+
+                // Check if looping is enabled by calling the provider function
+                if (isLoopEnabledProvider.get()) {
+                    // Get the current settings from the GUI via the provider
+                    LoopConfig currentConfig = loopConfigProvider.get();
+                    long loopEndMicro = parseTime(currentConfig.loopEnd);
+                    if (currentMicroSeconds >= loopEndMicro) {
+
+                        if (currentConfig.isInfinite) {
+                            // If infinite, just jump back to the start.
+                            long loopStartMicro = parseTime(currentConfig.loopStart);
+                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                            LOGGER.log(Level.INFO, "Looping infinitely.");
+                        } else if (intRepeatsRemaining > 0) {
+                            // If finite, decrement and jump back.
+                            intRepeatsRemaining--;
+                            LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
+                            long loopStartMicro = parseTime(currentConfig.loopStart);
+                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                        } else {
+                            // Otherwise, the loop is finished.
+                            onLoopFinishCallback.run();
+                            LOGGER.info("Looping has finished.");
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * Grabs the current microsecond position of a playing audio file
+     *
+     * @return The microsecond position, or 0 if there's an issue with the file
+     */
+    public long getCurrentMicroseconds() {
+        if (clpAudioClip != null) {
+            return clpAudioClip.getMicrosecondPosition();
+        }
+        return 0;
     }
 }
