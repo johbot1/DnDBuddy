@@ -1,12 +1,11 @@
 import javazoom.jl.decoder.Bitstream;
+import javazoom.jl.decoder.Decoder;
 import javazoom.jl.decoder.Header;
+import javazoom.jl.decoder.SampleBuffer;
 
 import javax.sound.sampled.*;
 import javax.swing.Timer;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.InputStream;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -165,31 +164,14 @@ public class AudioService {
             AudioInputStream audioStream;
             String fileName = fileToLoad.getName().toLowerCase();
 
-            // --- THIS IS THE NEW LOGIC ---
+            // --- FIXED MP3 LOGIC ---
             if (fileName.endsWith(".mp3")) {
-                // Manually decode the MP3 to a PCM AudioInputStream
-                InputStream fileInputStream = new FileInputStream(fileToLoad);
-                Bitstream bitstream = new Bitstream(fileInputStream);
-                Header header = bitstream.readFrame();
-
-                // Get audio format from MP3 header
-                int channels = (header.mode() == Header.SINGLE_CHANNEL) ? 1 : 2;
-                AudioFormat decodedFormat = new AudioFormat(
-                        header.frequency(),
-                        16, // Bit depth
-                        channels,
-                        true, // Signed
-                        false // Big-endian
-                );
-
-                // Create an AudioInputStream from the decoded MP3 stream
-                audioStream = new AudioInputStream(fileInputStream, decodedFormat, -1);
-
+                audioStream = convertMp3ToAudioInputStream(fileToLoad);
             } else {
                 // For WAV, AU, etc., use the standard method
                 audioStream = AudioSystem.getAudioInputStream(fileToLoad);
             }
-            // --- END OF NEW LOGIC ---
+            // --- END OF FIXED LOGIC ---
 
             clpAudioClip = AudioSystem.getClip();
 
@@ -209,6 +191,81 @@ public class AudioService {
             this.currentlyLoadedFile = null;
             return null;
         }
+    }
+
+    /**
+     * Converts an MP3 file to a PCM AudioInputStream using JLayer
+     * @param mp3File The MP3 file to convert
+     * @return AudioInputStream containing decoded PCM data
+     * @throws Exception if conversion fails
+     */
+    private AudioInputStream convertMp3ToAudioInputStream(File mp3File) throws Exception {
+        FileInputStream fileInputStream = new FileInputStream(mp3File);
+        Bitstream bitstream = new Bitstream(fileInputStream);
+        Decoder decoder = new Decoder();
+
+        // Read first frame to get format information
+        Header firstHeader = bitstream.readFrame();
+        if (firstHeader == null) {
+            throw new Exception("Invalid MP3 file - no frames found");
+        }
+
+        // Create audio format based on MP3 header
+        int channels = (firstHeader.mode() == Header.SINGLE_CHANNEL) ? 1 : 2;
+        float sampleRate = firstHeader.frequency();
+        AudioFormat decodedFormat = new AudioFormat(
+                AudioFormat.Encoding.PCM_SIGNED,
+                sampleRate,
+                16, // 16-bit
+                channels,
+                channels * 2, // frame size (2 bytes per sample * channels)
+                sampleRate, // frame rate
+                false // little endian
+        );
+
+        // Decode the entire MP3 to PCM data
+        ByteArrayOutputStream pcmOutput = new ByteArrayOutputStream();
+
+        // Reset the bitstream to start from beginning
+        bitstream.close();
+        fileInputStream.close();
+        fileInputStream = new FileInputStream(mp3File);
+        bitstream = new Bitstream(fileInputStream);
+        decoder = new Decoder();
+
+        Header header;
+        int frameCount = 0;
+        while ((header = bitstream.readFrame()) != null) {
+            SampleBuffer output = (SampleBuffer) decoder.decodeFrame(header, bitstream);
+
+            if (output != null) {
+                // Convert samples to byte array
+                short[] samples = output.getBuffer();
+                int sampleCount = output.getBufferLength();
+
+                for (int i = 0; i < sampleCount; i++) {
+                    // Write as little-endian 16-bit signed PCM
+                    int sample = samples[i];
+                    pcmOutput.write(sample & 0xFF);        // Low byte
+                    pcmOutput.write((sample >> 8) & 0xFF); // High byte
+                }
+            }
+
+            bitstream.closeFrame();
+            frameCount++;
+        }
+
+        bitstream.close();
+        fileInputStream.close();
+
+        if (frameCount == 0) {
+            throw new Exception("No valid MP3 frames found");
+        }
+
+        byte[] pcmData = pcmOutput.toByteArray();
+        ByteArrayInputStream pcmInput = new ByteArrayInputStream(pcmData);
+
+        return new AudioInputStream(pcmInput, decodedFormat, pcmData.length / decodedFormat.getFrameSize());
     }
 
     /**
