@@ -164,14 +164,12 @@ public class AudioService {
             AudioInputStream audioStream;
             String fileName = fileToLoad.getName().toLowerCase();
 
-            // --- FIXED MP3 LOGIC ---
             if (fileName.endsWith(".mp3")) {
                 audioStream = convertMp3ToAudioInputStream(fileToLoad);
             } else {
                 // For WAV, AU, etc., use the standard method
                 audioStream = AudioSystem.getAudioInputStream(fileToLoad);
             }
-            // --- END OF FIXED LOGIC ---
 
             clpAudioClip = AudioSystem.getClip();
 
@@ -202,7 +200,7 @@ public class AudioService {
     private AudioInputStream convertMp3ToAudioInputStream(File mp3File) throws Exception {
         FileInputStream fileInputStream = new FileInputStream(mp3File);
         Bitstream bitstream = new Bitstream(fileInputStream);
-        Decoder decoder = new Decoder();
+        Decoder decoder;
 
         // Read first frame to get format information
         Header firstHeader = bitstream.readFrame();
@@ -290,7 +288,7 @@ public class AudioService {
             String[] parts = timeString.split(":");
             if (parts.length == 2) {
                 long minutes = Long.parseLong(parts[0]);
-                long seconds = 0;
+                long seconds;
                 long milliseconds = 0;
                 String secondPart = parts[1];
                 if (secondPart.contains(".")) {
