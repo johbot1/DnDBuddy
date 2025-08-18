@@ -72,15 +72,22 @@ public class AudioService {
                     LoopConfig currentConfig = loopConfigProvider.get();
                     long loopEndMicro = parseTime(currentConfig.loopEnd);
                     if (currentMicroSeconds >= loopEndMicro) {
-                        if (intRepeatsRemaining > 0) {
+
+                        if (currentConfig.boolInfinite) {
+                            // If infinite, just jump back to the start.
+                            long loopStartMicro = parseTime(currentConfig.loopStart);
+                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                            LOGGER.log(Level.INFO, "Looping infinitely.");
+                        } else if (intRepeatsRemaining > 0) {
+                            // If finite, decrement and jump back.
                             intRepeatsRemaining--;
                             LOGGER.log(Level.INFO, "Looping. Repeats Remaining: {0}", intRepeatsRemaining);
                             long loopStartMicro = parseTime(currentConfig.loopStart);
-                            clpAudioClip.setMicrosecondPosition(loopStartMicro);
+                            if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
                         } else {
-                            // Tell the GUI to uncheck the box
+                            // Otherwise, the loop is finished.
                             onLoopFinishCallback.run();
-                            LOGGER.log(Level.INFO, "Looping has finished. Playing remainder of the song...");
+                            LOGGER.info("Looping has finished.");
                         }
                     }
                 }
@@ -95,8 +102,13 @@ public class AudioService {
         if (clpAudioClip != null) {
             if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
                 LoopConfig config = loopConfigProvider.get();
-                intRepeatsRemaining = config.repeats;
-                LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
+                // Only set the repeat counter if the loop is NOT infinite
+                if (!config.boolInfinite) {
+                    intRepeatsRemaining = config.repeats;
+                    LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
+                } else {
+                    LOGGER.log(Level.INFO, "Starting infinite loop.");
+                }
             }
             clpAudioClip.start();
             tmrTimeline.start();

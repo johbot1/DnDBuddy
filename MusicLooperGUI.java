@@ -20,7 +20,7 @@ public class MusicLooperGUI {
     private JButton btnPlay, btnPause, btnStop;
     private JTextField txtLoopStart, txtLoopEnd, txtLoopCount;
     private JButton btnSetLoopStart, btnSetLoopEnd;
-    private JCheckBox chkEnableLoop;
+    private JCheckBox chkEnableLoop, chkInfiniteLoop;
     private JList<File> fileList;
     private DefaultListModel<File> fileListModel;
     private JButton btnOpenFolder;
@@ -133,7 +133,8 @@ public class MusicLooperGUI {
         updatingUI = true;
         txtLoopStart.setText(details.config().loopStart);
         txtLoopEnd.setText(details.config().loopEnd);
-        txtLoopCount.setText(String.valueOf(details.config().repeats));
+        txtLoopCount.setEnabled(!details.config().boolInfinite);
+        chkInfiniteLoop.setSelected(details.config().boolInfinite);
         updatingUI = false;
 
         audioService.stop(); // Reset player to a clean state
@@ -150,6 +151,7 @@ public class MusicLooperGUI {
         LoopConfig config = new LoopConfig();
         config.loopStart = txtLoopStart.getText();
         config.loopEnd = txtLoopEnd.getText();
+        config.boolInfinite = chkInfiniteLoop.isSelected(); // Save the state of the new checkbox
         try {
             config.repeats = Integer.parseInt(txtLoopCount.getText());
         } catch (NumberFormatException e) {
@@ -173,22 +175,18 @@ public class MusicLooperGUI {
      */
     private JPanel createButtonPanel() {
         JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
-
         btnPlay = new JButton("Play");
         btnPlay.addActionListener(e -> {
             audioService.play();
             btnPlay.setText("Resume");
         });
-
         btnPause = new JButton("Pause");
         btnPause.addActionListener(e -> audioService.pause());
-
         btnStop = new JButton("Stop");
         btnStop.addActionListener(e -> {
             audioService.stop();
-            btnPlay.setText("Play"); // Reset button text on stop
+            btnPlay.setText("Play");
         });
-
         Dimension buttonSize = new Dimension(80, 30);
         btnPlay.setPreferredSize(buttonSize);
         btnPause.setPreferredSize(buttonSize);
@@ -209,7 +207,6 @@ public class MusicLooperGUI {
         lblStartTime = new JLabel("00:00.000");
         lblEndTime = new JLabel("00:00.000");
         sldrTimelineSlider = new JSlider(0, 0, 0);
-
         sldrTimelineSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
             public void mousePressed(java.awt.event.MouseEvent e) { boolIsUserDragging = true; }
@@ -225,7 +222,6 @@ public class MusicLooperGUI {
                 lblStartTime.setText(audioService.formatTime(sldrTimelineSlider.getValue() * 1_000_000L));
             }
         });
-
         pnlTimeline.add(lblStartTime, BorderLayout.WEST);
         pnlTimeline.add(sldrTimelineSlider, BorderLayout.CENTER);
         pnlTimeline.add(lblEndTime, BorderLayout.EAST);
@@ -284,7 +280,14 @@ public class MusicLooperGUI {
         gbc.gridx = 2; btnSetLoopEnd = new JButton("Set"); btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd)); panel.add(btnSetLoopEnd, gbc);
 
         gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Repetitions:"), gbc);
-        gbc.gridx = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(listener); panel.add(txtLoopCount, gbc);
+        gbc.gridx = 1; gbc.gridwidth = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(listener); panel.add(txtLoopCount, gbc);
+
+        gbc.gridx = 2; gbc.gridwidth = 1; chkInfiniteLoop = new JCheckBox("Infinite");
+        chkInfiniteLoop.addActionListener(e -> {
+            txtLoopCount.setEnabled(!chkInfiniteLoop.isSelected());
+            if (!updatingUI) audioService.updateCurrentConfig(getCurrentConfigFromUI());
+        });
+        panel.add(chkInfiniteLoop, gbc);
 
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3; chkEnableLoop = new JCheckBox("Enable Loop"); panel.add(chkEnableLoop, gbc);
 
@@ -330,5 +333,6 @@ public class MusicLooperGUI {
         btnSetLoopStart.setEnabled(enabled);
         btnSetLoopEnd.setEnabled(enabled);
         chkEnableLoop.setEnabled(enabled);
+        chkInfiniteLoop.setEnabled(enabled);
     }
 }

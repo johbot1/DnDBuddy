@@ -48,7 +48,7 @@
     - [] 1.3.13 Saving Loop Configs in a file
     - [X] 1.3.14 .WAV/.AU Support
     - [X] 1.3.15 .MP3 Support
-    - [] 1.3.16 Loop amount toggle
+    - [X] 1.3.16 Infinite Loop Toggle
 - ### [] 1.4 Skin
   - [] 1.4.1 Style the UI with basic color
   - [] 1.4.2 Style the UI with an Image
