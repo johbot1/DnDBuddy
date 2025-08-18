@@ -36,28 +36,24 @@ public class MusicLooperGUI {
      * Initializes the main frame and all its UI components.
      */
     public void initUI() {
-        // This is the function that provides the current loop settings from the UI fields.
-        Supplier<LoopConfig> loopConfigProvider = this::getCurrentConfigFromUI;
+        // We need to create the model here so we can pass it to the service
+        fileListModel = new DefaultListModel<>();
 
-        // Create the instance of our audio engine, passing it all the necessary functions.
+        // Create the instance of our audio engine, passing it the new components.
         this.audioService = new AudioService(
-                // 1. Update the time display
-                currentMicroseconds -> {
+                frmFoundation, // Pass the frame for centering dialogs
+                fileListModel, // Pass the list model for the service to manage
+                currentMicroseconds -> { // The time update callback
                     if (!boolIsUserDragging) {
-                        long currentSeconds = currentMicroseconds / 1_000_000;
-                        sldrTimelineSlider.setValue((int) currentSeconds);
+                        sldrTimelineSlider.setValue((int) (currentMicroseconds / 1_000_000));
                         lblStartTime.setText(audioService.formatTime(currentMicroseconds));
                     }
                 },
-                // 2. Get the current loop settings
-                loopConfigProvider,
-                // 3. Check if the loop is enabled
-                () -> chkEnableLoop.isSelected(),
-                // 4. Run when looping finishes
-                () -> chkEnableLoop.setSelected(false)
+                this::getCurrentConfigFromUI, // The config provider
+                () -> chkEnableLoop.isSelected(), // The loop enabled provider
+                () -> chkEnableLoop.setSelected(false) // The loop finish callback
         );
 
-        // --- UI Setup ---
         frmFoundation = new JFrame("Groove Buddy - Music Looper");
         frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frmFoundation.setLayout(new BorderLayout());
@@ -83,20 +79,21 @@ public class MusicLooperGUI {
     }
 
     /**
-     * Creates the file browser panel on the RIGHT side of the UI
+     * Creates the file browser panel. The open folder button now delegates to the service.
      */
     private JPanel pnlCreateFileBrowser() {
         JPanel panel = new JPanel(new BorderLayout(5, 5));
         panel.setBorder(BorderFactory.createTitledBorder("Audio Files"));
 
         btnOpenFolder = new JButton("Open Folder");
-        btnOpenFolder.addActionListener(e -> openFolder());
+        // THIS IS THE KEY CHANGE: The button now calls the service's method.
+        btnOpenFolder.addActionListener(e -> audioService.openFolder());
         panel.add(btnOpenFolder, BorderLayout.NORTH);
 
-        fileListModel = new DefaultListModel<>();
+        // The fileListModel is now created in initUI and passed to the service.
+        // The service is responsible for adding/removing files.
         fileList = new JList<>(fileListModel);
         fileList.setCellRenderer(new FileNameRenderer());
-
         fileList.addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 File selectedFile = fileList.getSelectedValue();
@@ -112,7 +109,6 @@ public class MusicLooperGUI {
                 }
             }
         });
-
         JScrollPane scrollPane = new JScrollPane(fileList);
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.setPreferredSize(new Dimension(200, 0));
@@ -233,30 +229,6 @@ public class MusicLooperGUI {
         return pnlTimeline;
     }
 
-    /**
-     * Opens a JFileChooser to select a directory, then populates the file list
-     * with supported audio files found inside
-     */
-    private void openFolder() {
-        JFileChooser folderChooser = new JFileChooser();
-        folderChooser.setDialogTitle("Select Audio Folder");
-        folderChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        folderChooser.setAcceptAllFileFilterUsed(false);
-
-        if (folderChooser.showOpenDialog(frmFoundation) == JFileChooser.APPROVE_OPTION) {
-            File selectedFolder = folderChooser.getSelectedFile();
-            fileListModel.clear();
-            File[] audioFiles = selectedFolder.listFiles((dir, name) -> {
-                String lowerName = name.toLowerCase();
-                return lowerName.endsWith(".wav") || lowerName.endsWith(".au") || lowerName.endsWith(".mp3");
-            });
-            if (audioFiles != null) {
-                for (File file : audioFiles) {
-                    fileListModel.addElement(file);
-                }
-            }
-        }
-    }
 
     /**
      * Creates the Central Panel for loop settings
@@ -371,4 +343,6 @@ public class MusicLooperGUI {
         chkEnableLoop.setEnabled(enabled);
         chkInfiniteLoop.setEnabled(enabled);
     }
+
+
 }
