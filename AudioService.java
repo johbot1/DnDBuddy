@@ -67,7 +67,7 @@ public class AudioService {
                     long loopEndMicro = parseTime(currentConfig.loopEnd);
                     if (currentMicroSeconds >= loopEndMicro) {
 
-                        if (currentConfig.boolInfinite) {
+                        if (currentConfig.isInfinite) {
                             // If infinite, just jump back to the start.
                             long loopStartMicro = parseTime(currentConfig.loopStart);
                             if (loopStartMicro >= 0) clpAudioClip.setMicrosecondPosition(loopStartMicro);
@@ -97,7 +97,7 @@ public class AudioService {
             if (isLoopEnabledProvider.get() && !tmrTimeline.isRunning()) {
                 LoopConfig config = loopConfigProvider.get();
                 // Only set the repeat counter if the loop is NOT infinite
-                if (!config.boolInfinite) {
+                if (!config.isInfinite) {
                     intRepeatsRemaining = config.repeats;
                     LOGGER.log(Level.INFO, "Starting loop with {0} repetitions.", intRepeatsRemaining);
                 } else {

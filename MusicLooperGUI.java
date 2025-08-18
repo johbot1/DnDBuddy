@@ -134,8 +134,8 @@ public class MusicLooperGUI {
         updatingUI = true;
         txtLoopStart.setText(details.config().loopStart);
         txtLoopEnd.setText(details.config().loopEnd);
-        txtLoopCount.setEnabled(!details.config().boolInfinite);
-        chkInfiniteLoop.setSelected(details.config().boolInfinite);
+        txtLoopCount.setEnabled(!details.config().isInfinite);
+        chkInfiniteLoop.setSelected(details.config().isInfinite);
         updatingUI = false;
 
         audioService.stop(); // Reset player to a clean state
@@ -153,7 +153,7 @@ public class MusicLooperGUI {
         LoopConfig config = new LoopConfig();
         config.loopStart = txtLoopStart.getText();
         config.loopEnd = txtLoopEnd.getText();
-        config.boolInfinite = chkInfiniteLoop.isSelected(); // Save the state of the new checkbox
+        config.isInfinite = chkInfiniteLoop.isSelected(); // Save the state of the new checkbox
         try {
             config.repeats = Integer.parseInt(txtLoopCount.getText());
         } catch (NumberFormatException e) {
