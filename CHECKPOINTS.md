@@ -47,7 +47,7 @@
     - [X] 1.3.10.3 Saving Loop Configs as a Session
     - [] 1.3.10.4 Saving Loop Configs in a file
     - [X] 1.3.10.5 .WAV/.AU Support
-    - [] 1.3.10.6 .MP3 Support
+    - [X] 1.3.10.6 .MP3 Support
 - ### [] 1.4 Skin
   - [] 1.4.1 Style the UI with basic color
   - [] 1.4.2 Style the UI with an Image
