@@ -42,12 +42,13 @@
     - [X] 1.3.7 Looping Functionality
     - [X] 1.3.8 Visual clarity with playback
     - [X] 1.3.9 Timeline slider interactivity
-    - [X] 1.3.10.1 Time formatting
-    - [X] 1.3.10.2 File Explorer Window
-    - [X] 1.3.10.3 Saving Loop Configs as a Session
-    - [] 1.3.10.4 Saving Loop Configs in a file
-    - [X] 1.3.10.5 .WAV/.AU Support
-    - [X] 1.3.10.6 .MP3 Support
+    - [X] 1.3.10 Time formatting
+    - [X] 1.3.11 File Explorer Window
+    - [X] 1.3.12 Saving Loop Configs as a Session
+    - [] 1.3.13 Saving Loop Configs in a file
+    - [X] 1.3.14 .WAV/.AU Support
+    - [X] 1.3.15 .MP3 Support
+    - [] 1.3.16 Loop amount toggle
 - ### [] 1.4 Skin
   - [] 1.4.1 Style the UI with basic color
   - [] 1.4.2 Style the UI with an Image
