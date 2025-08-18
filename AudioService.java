@@ -5,6 +5,7 @@ import javazoom.jl.decoder.SampleBuffer;
 
 import javax.sound.sampled.*;
 import javax.swing.*;
+import java.awt.*;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -34,6 +35,14 @@ public class AudioService {
     private int intRepeatsRemaining;
     private File currentlyLoadedFile;
 
+    private static final String CONFIG_FILE_NAME = "groovebuddy_loops.properties";
+
+    // Variable to track the currently open folder
+    private File currentConfigFolder;
+    // Variables to connect the service to the GUI
+    private final DefaultListModel<File> fileListModel;
+    private final Component parentComponent; // For centering dialogs
+
     /**
      * Constructor for the AudioService.
      *
@@ -42,7 +51,9 @@ public class AudioService {
      * @param isLoopEnabledProvider A function that returns true if the loop checkbox is enabled.
      * @param onLoopFinishCallback  A function to call when the looping finishes.
      */
-    public AudioService(Consumer<Long> onTimeUpdate, Supplier<LoopConfig> loopConfigProvider, Supplier<Boolean> isLoopEnabledProvider, Runnable onLoopFinishCallback) {
+    public AudioService(Component parentComponent, DefaultListModel<File> fileListModel, Consumer<Long> onTimeUpdate, Supplier<LoopConfig> loopConfigProvider, Supplier<Boolean> isLoopEnabledProvider, Runnable onLoopFinishCallback) {
+        this.parentComponent = parentComponent;
+        this.fileListModel = fileListModel;
         this.onTimeUpdate = onTimeUpdate;
         this.loopConfigProvider = loopConfigProvider;
         this.isLoopEnabledProvider = isLoopEnabledProvider;
