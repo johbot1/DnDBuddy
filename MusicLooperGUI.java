@@ -121,8 +121,9 @@ public class MusicLooperGUI {
 
     /**
      * Updates all UI Components based on a loaded file
+     *
      * @param fileName The name of the selected audio file
-     * @param details Details such as ms length and configuration
+     * @param details  Details such as ms length and configuration
      */
     private void updateUIWithAudioDetails(String fileName, AudioService.AudioDetails details) {
         long durationSeconds = details.durationMicroseconds() / 1_000_000;
@@ -145,6 +146,7 @@ public class MusicLooperGUI {
 
     /**
      * Gets the current loop settings from the UI fields into a LoopConfig
+     *
      * @return Returns a configuration defined by UI elements
      */
     private LoopConfig getCurrentConfigFromUI() {
@@ -209,7 +211,10 @@ public class MusicLooperGUI {
         sldrTimelineSlider = new JSlider(0, 0, 0);
         sldrTimelineSlider.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            public void mousePressed(java.awt.event.MouseEvent e) { boolIsUserDragging = true; }
+            public void mousePressed(java.awt.event.MouseEvent e) {
+                boolIsUserDragging = true;
+            }
+
             @Override
             public void mouseReleased(java.awt.event.MouseEvent e) {
                 audioService.seek(sldrTimelineSlider.getValue() * 1_000_000L);
@@ -271,27 +276,58 @@ public class MusicLooperGUI {
             }
         };
 
-        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Loop Start:"), gbc);
-        gbc.gridx = 1; txtLoopStart = new JTextField("00:00.000", 8); txtLoopStart.getDocument().addDocumentListener(listener); panel.add(txtLoopStart, gbc);
-        gbc.gridx = 2; btnSetLoopStart = new JButton("Set"); btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart)); panel.add(btnSetLoopStart, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        panel.add(new JLabel("Loop Start:"), gbc);
+        gbc.gridx = 1;
+        txtLoopStart = new JTextField("00:00.000", 8);
+        txtLoopStart.getDocument().addDocumentListener(listener);
+        panel.add(txtLoopStart, gbc);
+        gbc.gridx = 2;
+        btnSetLoopStart = new JButton("Set");
+        btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart));
+        panel.add(btnSetLoopStart, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Loop End:"), gbc);
-        gbc.gridx = 1; txtLoopEnd = new JTextField("00:00.000", 8); txtLoopEnd.getDocument().addDocumentListener(listener); panel.add(txtLoopEnd, gbc);
-        gbc.gridx = 2; btnSetLoopEnd = new JButton("Set"); btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd)); panel.add(btnSetLoopEnd, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Loop End:"), gbc);
+        gbc.gridx = 1;
+        txtLoopEnd = new JTextField("00:00.000", 8);
+        txtLoopEnd.getDocument().addDocumentListener(listener);
+        panel.add(txtLoopEnd, gbc);
+        gbc.gridx = 2;
+        btnSetLoopEnd = new JButton("Set");
+        btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd));
+        panel.add(btnSetLoopEnd, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Repetitions:"), gbc);
-        gbc.gridx = 1; gbc.gridwidth = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(listener); panel.add(txtLoopCount, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        panel.add(new JLabel("Repetitions:"), gbc);
+        gbc.gridx = 1;
+        gbc.gridwidth = 1;
+        txtLoopCount = new JTextField("1", 3);
+        txtLoopCount.getDocument().addDocumentListener(listener);
+        panel.add(txtLoopCount, gbc);
 
-        gbc.gridx = 2; gbc.gridwidth = 1; chkInfiniteLoop = new JCheckBox("Infinite");
+        gbc.gridx = 2;
+        gbc.gridwidth = 1;
+        chkInfiniteLoop = new JCheckBox("Infinite");
         chkInfiniteLoop.addActionListener(e -> {
             txtLoopCount.setEnabled(!chkInfiniteLoop.isSelected());
             if (!updatingUI) audioService.updateCurrentConfig(getCurrentConfigFromUI());
         });
         panel.add(chkInfiniteLoop, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 3; chkEnableLoop = new JCheckBox("Enable Loop"); panel.add(chkEnableLoop, gbc);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 3;
+        chkEnableLoop = new JCheckBox("Enable Loop");
+        panel.add(chkEnableLoop, gbc);
 
-        gbc.gridy = 4; gbc.fill = GridBagConstraints.HORIZONTAL; lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER); panel.add(lblStatusLabel, gbc);
+        gbc.gridy = 4;
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER);
+        panel.add(lblStatusLabel, gbc);
 
         return panel;
     }

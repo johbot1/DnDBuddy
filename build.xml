@@ -1,8 +1,8 @@
 <project name="DMBuddy" default="run" basedir=".">
     <!-- Where to put compiled classes and copied resources -->
-    <property name="build.dir"   value="build"/>
+    <property name="build.dir" value="build"/>
     <property name="classes.dir" value="${build.dir}/classes"/>
-    <property name="resources"   value="resources"/>
+    <property name="resources" value="resources"/>
 
     <!-- 1) Prepare build dirs -->
     <target name="init">

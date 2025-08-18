@@ -4,8 +4,11 @@ import javazoom.jl.decoder.Header;
 import javazoom.jl.decoder.SampleBuffer;
 
 import javax.sound.sampled.*;
-import javax.swing.Timer;
-import java.io.*;
+import javax.swing.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -16,37 +19,28 @@ import java.util.logging.Logger;
 public class AudioService {
     // A logger for logging messages for this class
     private static final Logger LOGGER = Logger.getLogger(MusicLooperGUI.class.getName());
+    // -- Configuration Components --
+    private final Map<File, LoopConfig> loopConfigMap = new HashMap<>();
+    // -- Callback + Providers from GUI --
+    private final Consumer<Long> onTimeUpdate;
+    private final Supplier<LoopConfig> loopConfigProvider;
+    private final Supplier<Boolean> isLoopEnabledProvider;
+    private final Runnable onLoopFinishCallback;
     //A storage area for loaded audio data
     private Clip clpAudioClip;
     // Timer for updating timeline slider
     private Timer tmrTimeline;
     //Counter for repeats
     private int intRepeatsRemaining;
-
-    // -- Configuration Components --
-    private final Map<File, LoopConfig> loopConfigMap = new HashMap<>();
     private File currentlyLoadedFile;
-
-    // -- Callback + Providers from GUI --
-    private final Consumer<Long> onTimeUpdate;
-    private final Supplier<LoopConfig> loopConfigProvider;
-    private final Supplier<Boolean> isLoopEnabledProvider;
-    private final Runnable onLoopFinishCallback;
-
-    /**
-     * The information pertaining to a specified Audio file
-     *
-     * @param durationMicroseconds How long the file lasts in microseconds
-     * @param config               Any applied loop configuration
-     */
-    public record AudioDetails(long durationMicroseconds, LoopConfig config) {}
 
     /**
      * Constructor for the AudioService.
-     * @param onTimeUpdate A function that will be called every timer tick with the current microsecond position.
-     * @param loopConfigProvider A function that provides the current loop settings from the UI.
+     *
+     * @param onTimeUpdate          A function that will be called every timer tick with the current microsecond position.
+     * @param loopConfigProvider    A function that provides the current loop settings from the UI.
      * @param isLoopEnabledProvider A function that returns true if the loop checkbox is enabled.
-     * @param onLoopFinishCallback A function to call when the looping finishes.
+     * @param onLoopFinishCallback  A function to call when the looping finishes.
      */
     public AudioService(Consumer<Long> onTimeUpdate, Supplier<LoopConfig> loopConfigProvider, Supplier<Boolean> isLoopEnabledProvider, Runnable onLoopFinishCallback) {
         this.onTimeUpdate = onTimeUpdate;
@@ -143,6 +137,7 @@ public class AudioService {
 
     /**
      * Allows a user to use the timeline to scrub through the loaded audio file
+     *
      * @param microseconds The play head position described in microseconds
      */
     public void seek(long microseconds) {
@@ -153,6 +148,7 @@ public class AudioService {
 
     /**
      * Grabs the current microsecond position of a playing audio file
+     *
      * @return The microsecond position, or 0 if there's an issue with the file
      */
     public long getCurrentMicroseconds() {
@@ -162,9 +158,9 @@ public class AudioService {
         return 0;
     }
 
-    // -- FILE + CONFIG Logic
     /**
      * Loads the selected audio file, retrieving its loop config if it exists.
+     *
      * @param fileToLoad The file to load.
      * @return An AudioDetails object on success, or null on failure.
      */
@@ -203,8 +199,11 @@ public class AudioService {
         }
     }
 
+    // -- FILE + CONFIG Logic
+
     /**
      * Converts an MP3 file to a PCM AudioInputStream using JLayer
+     *
      * @param mp3File The MP3 file to convert
      * @return AudioInputStream containing decoded PCM data
      * @throws Exception if conversion fails
@@ -280,6 +279,7 @@ public class AudioService {
 
     /**
      * Saves the current UI loop settings to the in-memory map.
+     *
      * @param config The new configuration to save for the current file.
      */
     public void updateCurrentConfig(LoopConfig config) {
@@ -288,7 +288,6 @@ public class AudioService {
         }
     }
 
-    // -- Utility Methods --
     /**
      * Parses a time string (MM:SS) into total seconds
      *
@@ -321,6 +320,8 @@ public class AudioService {
         return -1;
     }
 
+    // -- Utility Methods --
+
     /**
      * Formats a duration in total seconds to an MM:SS string
      *
@@ -333,5 +334,14 @@ public class AudioService {
         long seconds = totalSeconds % 60;
         long milliseconds = (totalMicroSeconds / 1000) % 1000;
         return String.format("%02d:%02d.%03d", minutes, seconds, milliseconds);
+    }
+
+    /**
+     * The information pertaining to a specified Audio file
+     *
+     * @param durationMicroseconds How long the file lasts in microseconds
+     * @param config               Any applied loop configuration
+     */
+    public record AudioDetails(long durationMicroseconds, LoopConfig config) {
     }
 }
