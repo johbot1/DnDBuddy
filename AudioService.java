@@ -116,8 +116,8 @@ public class AudioService {
         }
     }
 
-    // -- File + Config Logic
 
+    // -- File + Config Logic
     /**
      * Converts an MP3 file to a PCM AudioInputStream using JLayer
      *
@@ -195,13 +195,13 @@ public class AudioService {
     }
 
     /**
-     * Saves the current UI loop settings to the in-memory map.
-     *
+     * Updates the config for the current file and immediately saves all configs to disk.
      * @param config The new configuration to save for the current file.
      */
     public void updateCurrentConfig(LoopConfig config) {
         if (currentlyLoadedFile != null) {
             loopConfigMap.put(currentlyLoadedFile, config);
+            saveConfigsToFile(); // Save every time a change is made
         }
     }
 
@@ -279,6 +279,7 @@ public class AudioService {
             LOGGER.log(Level.SEVERE, "Error saving config file", e);
         }
     }
+
 
     // -- Playback Methods --
     /**
