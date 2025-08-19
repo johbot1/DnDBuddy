@@ -1,5 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
+import java.net.URL;
 
 /**
  * Main entry point for the DnD Buddy Application
@@ -35,6 +36,27 @@ public class Main {
     private static void createMainMenu() {
         // 1. Create the window
         JFrame frmFoundation = new JFrame("DnD Buddy - Main Menu");
+
+        try {
+            URL iconURL = Main.class.getResource("resources/images/icon.png");
+            if (iconURL != null) {
+                ImageIcon icon = new ImageIcon(iconURL);
+                Image image = icon.getImage();
+
+                // This sets the icon for the window's title bar (works on all OS)
+                frmFoundation.setIconImage(image);
+
+                // This is the special step for the macOS Dock icon (Java 9+)
+                if (Taskbar.isTaskbarSupported()) {
+                    Taskbar.getTaskbar().setIconImage(image);
+                }
+
+            } else {
+                System.err.println("Couldn't find icon file");
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading icon: " + e.getMessage());
+        }
         frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frmFoundation.setSize(400, 250);
         frmFoundation.setLocationRelativeTo(null);
