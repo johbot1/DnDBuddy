@@ -17,7 +17,7 @@ public class MusicLooperGUI {
     private JLabel lblStartTime;
     private JLabel lblEndTime;
     private JSlider sldrTimelineSlider;
-    private JButton btnPlay, btnPause, btnStop;
+    private JButton btnPlay, btnPause, btnStop, btnClear, btnClearAll;
     private JTextField txtLoopStart, txtLoopEnd, txtLoopCount;
     private JButton btnSetLoopStart, btnSetLoopEnd;
     private JCheckBox chkEnableLoop, chkInfiniteLoop;
@@ -78,6 +78,7 @@ public class MusicLooperGUI {
         frmFoundation.setResizable(true);
     }
 
+    // --- Creators ---
     /**
      * Creates the file browser panel. The open folder button now delegates to the service.
      */
@@ -113,57 +114,6 @@ public class MusicLooperGUI {
         panel.add(scrollPane, BorderLayout.CENTER);
         panel.setPreferredSize(new Dimension(200, 0));
         return panel;
-    }
-
-    /**
-     * Updates all UI Components based on a loaded file
-     *
-     * @param fileName The name of the selected audio file
-     * @param details  Details such as ms length and configuration
-     */
-    private void updateUIWithAudioDetails(String fileName, AudioService.AudioDetails details) {
-        long durationSeconds = details.durationMicroseconds() / 1_000_000;
-        sldrTimelineSlider.setMaximum((int) durationSeconds);
-        lblEndTime.setText(audioService.formatTime(details.durationMicroseconds()));
-        lblStatusLabel.setText("Loaded: " + fileName);
-
-        updatingUI = true;
-        txtLoopStart.setText(details.config().loopStart);
-        txtLoopEnd.setText(details.config().loopEnd);
-        txtLoopCount.setEnabled(!details.config().isInfinite);
-        chkInfiniteLoop.setSelected(details.config().isInfinite);
-        updatingUI = false;
-
-        audioService.stop(); // Reset player to a clean state
-        btnPlay.setText("Play");
-        setPlaybackButtonsEnabled(true);
-        setLoopControlsEnabled(true);
-    }
-
-    /**
-     * Gets the current loop settings from the UI fields into a LoopConfig
-     *
-     * @return Returns a configuration defined by UI elements
-     */
-    private LoopConfig getCurrentConfigFromUI() {
-        LoopConfig config = new LoopConfig();
-        config.loopStart = txtLoopStart.getText();
-        config.loopEnd = txtLoopEnd.getText();
-        config.isInfinite = chkInfiniteLoop.isSelected(); // Save the state of the new checkbox
-        try {
-            config.repeats = Integer.parseInt(txtLoopCount.getText());
-        } catch (NumberFormatException e) {
-            config.repeats = 1;
-        }
-        return config;
-    }
-
-    /**
-     * Sets the text of a target field to the current time on the timeline
-     */
-    private void setLoopPoint(JTextField targetField) {
-        long currentTime = audioService.getCurrentMicroseconds();
-        targetField.setText(audioService.formatTime(currentTime));
     }
 
     /**
@@ -229,7 +179,6 @@ public class MusicLooperGUI {
         return pnlTimeline;
     }
 
-
     /**
      * Creates the Central Panel for loop settings
      *
@@ -242,64 +191,54 @@ public class MusicLooperGUI {
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.anchor = GridBagConstraints.WEST;
 
-        SimpleDocumentListener listener = e -> {
-            if (!updatingUI) {
-                audioService.updateCurrentConfig(getCurrentConfigFromUI());
-            }
-        };
+        SimpleDocumentListener listener = e -> { if (!updatingUI) audioService.updateCurrentConfig(getCurrentConfigFromUI()); };
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        panel.add(new JLabel("Loop Start:"), gbc);
-        gbc.gridx = 1;
-        txtLoopStart = new JTextField("00:00.000", 8);
-        txtLoopStart.getDocument().addDocumentListener(listener);
-        panel.add(txtLoopStart, gbc);
-        gbc.gridx = 2;
-        btnSetLoopStart = new JButton("Set");
-        btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart));
-        panel.add(btnSetLoopStart, gbc);
+        // --- Row 0: Loop Start ---
+        gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Loop Start:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2; txtLoopStart = new JTextField("00:00.000", 8); txtLoopStart.getDocument().addDocumentListener(listener); panel.add(txtLoopStart, gbc);
+        gbc.gridx = 3; gbc.gridwidth = 1; btnSetLoopStart = new JButton("Set"); btnSetLoopStart.addActionListener(e -> setLoopPoint(txtLoopStart)); panel.add(btnSetLoopStart, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        panel.add(new JLabel("Loop End:"), gbc);
-        gbc.gridx = 1;
-        txtLoopEnd = new JTextField("00:00.000", 8);
-        txtLoopEnd.getDocument().addDocumentListener(listener);
-        panel.add(txtLoopEnd, gbc);
-        gbc.gridx = 2;
-        btnSetLoopEnd = new JButton("Set");
-        btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd));
-        panel.add(btnSetLoopEnd, gbc);
+        // --- Row 1: Loop End ---
+        gbc.gridx = 0; gbc.gridy = 1; panel.add(new JLabel("Loop End:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 2; txtLoopEnd = new JTextField("00:00.000", 8); txtLoopEnd.getDocument().addDocumentListener(listener); panel.add(txtLoopEnd, gbc);
+        gbc.gridx = 3; gbc.gridwidth = 1; btnSetLoopEnd = new JButton("Set"); btnSetLoopEnd.addActionListener(e -> setLoopPoint(txtLoopEnd)); panel.add(btnSetLoopEnd, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        panel.add(new JLabel("Repetitions:"), gbc);
-        gbc.gridx = 1;
-        gbc.gridwidth = 1;
-        txtLoopCount = new JTextField("1", 3);
-        txtLoopCount.getDocument().addDocumentListener(listener);
-        panel.add(txtLoopCount, gbc);
-
-        gbc.gridx = 2;
-        gbc.gridwidth = 1;
-        chkInfiniteLoop = new JCheckBox("Infinite");
+        // --- Row 2: Repetitions & Clear Buttons (Modified) ---
+        gbc.gridx = 0; gbc.gridy = 2; panel.add(new JLabel("Repetitions:"), gbc);
+        gbc.gridx = 1; gbc.gridwidth = 1; txtLoopCount = new JTextField("1", 3); txtLoopCount.getDocument().addDocumentListener(listener); panel.add(txtLoopCount, gbc);
+        gbc.gridx = 2; gbc.gridwidth = 1; chkInfiniteLoop = new JCheckBox("Infinite");
         chkInfiniteLoop.addActionListener(e -> {
             txtLoopCount.setEnabled(!chkInfiniteLoop.isSelected());
             if (!updatingUI) audioService.updateCurrentConfig(getCurrentConfigFromUI());
         });
         panel.add(chkInfiniteLoop, gbc);
 
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 3;
-        chkEnableLoop = new JCheckBox("Enable Loop");
-        panel.add(chkEnableLoop, gbc);
+        // --- Panel for the clear buttons with added functionality ---
+        JPanel clearButtonsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
+        btnClear = new JButton("Clear Current");
+        btnClear.setToolTipText("Clear cues for the current track");
+        btnClear.addActionListener(e -> {
+            audioService.clearCurrentLoopConfig();
+            refreshLoopUI();
+        });
 
-        gbc.gridy = 4;
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER);
-        panel.add(lblStatusLabel, gbc);
+        btnClearAll = new JButton("Clear All");
+        btnClearAll.setToolTipText("Clear all saved cues in this folder");
+        btnClearAll.addActionListener(e -> {
+            audioService.clearAllLoopConfigs();
+            refreshLoopUI();
+        });
+
+        clearButtonsPanel.add(btnClear);
+        clearButtonsPanel.add(btnClearAll);
+        gbc.gridx = 3; // Place this panel in the last column
+        panel.add(clearButtonsPanel, gbc);
+
+        // --- Row 3: Enable Loop Checkbox ---
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 4; chkEnableLoop = new JCheckBox("Enable Loop"); panel.add(chkEnableLoop, gbc);
+
+        // --- Row 4: Status Label ---
+        gbc.gridy = 4; gbc.fill = GridBagConstraints.HORIZONTAL; lblStatusLabel = new JLabel("Open a folder to begin.", SwingConstants.CENTER); panel.add(lblStatusLabel, gbc);
 
         return panel;
     }
@@ -316,6 +255,16 @@ public class MusicLooperGUI {
         pnlControlContainer.add(createTimelinePanel(), BorderLayout.NORTH);
         pnlControlContainer.add(createButtonPanel(), BorderLayout.CENTER);
         return pnlControlContainer;
+    }
+
+
+    // --- Setters ---
+    /**
+     * Sets the text of a target field to the current time on the timeline
+     */
+    private void setLoopPoint(JTextField targetField) {
+        long currentTime = audioService.getCurrentMicroseconds();
+        targetField.setText(audioService.formatTime(currentTime));
     }
 
     /**
@@ -344,5 +293,65 @@ public class MusicLooperGUI {
         chkInfiniteLoop.setEnabled(enabled);
     }
 
+    /**
+     * Resets the loop UI fields to their default state.
+     */
+    private void refreshLoopUI() {
+        // Create a default config to get the initial values
+        LoopConfig defaultConfig = new LoopConfig();
+
+        // updatingUI flag to prevent listeners from saving these default values
+        updatingUI = true;
+        txtLoopStart.setText(defaultConfig.loopStart);
+        txtLoopEnd.setText(defaultConfig.loopEnd);
+        txtLoopCount.setText(String.valueOf(defaultConfig.repeats));
+        chkInfiniteLoop.setSelected(defaultConfig.isInfinite);
+        txtLoopCount.setEnabled(true); // Ensure the count is re-enabled
+        updatingUI = false;
+    }
+
+    // --- Getters ---
+    /**
+     * Updates all UI Components based on a loaded file
+     *
+     * @param fileName The name of the selected audio file
+     * @param details  Details such as ms length and configuration
+     */
+    private void updateUIWithAudioDetails(String fileName, AudioService.AudioDetails details) {
+        long durationSeconds = details.durationMicroseconds() / 1_000_000;
+        sldrTimelineSlider.setMaximum((int) durationSeconds);
+        lblEndTime.setText(audioService.formatTime(details.durationMicroseconds()));
+        lblStatusLabel.setText("Loaded: " + fileName);
+
+        updatingUI = true;
+        txtLoopStart.setText(details.config().loopStart);
+        txtLoopEnd.setText(details.config().loopEnd);
+        txtLoopCount.setEnabled(!details.config().isInfinite);
+        chkInfiniteLoop.setSelected(details.config().isInfinite);
+        updatingUI = false;
+
+        audioService.stop(); // Reset player to a clean state
+        btnPlay.setText("Play");
+        setPlaybackButtonsEnabled(true);
+        setLoopControlsEnabled(true);
+    }
+
+    /**
+     * Gets the current loop settings from the UI fields into a LoopConfig
+     *
+     * @return Returns a configuration defined by UI elements
+     */
+    private LoopConfig getCurrentConfigFromUI() {
+        LoopConfig config = new LoopConfig();
+        config.loopStart = txtLoopStart.getText();
+        config.loopEnd = txtLoopEnd.getText();
+        config.isInfinite = chkInfiniteLoop.isSelected(); // Save the state of the new checkbox
+        try {
+            config.repeats = Integer.parseInt(txtLoopCount.getText());
+        } catch (NumberFormatException e) {
+            config.repeats = 1;
+        }
+        return config;
+    }
 
 }

@@ -118,6 +118,29 @@ public class AudioService {
 
 
     // -- File + Config Logic
+
+    /**
+     * Clears the saved loop configuration for the currently loaded track.
+     */
+    public void clearCurrentLoopConfig() {
+        if (currentlyLoadedFile != null) {
+            loopConfigMap.remove(currentlyLoadedFile);
+            LOGGER.info("Cleared loop configuration for: " + currentlyLoadedFile.getName());
+            saveConfigsToFile();
+        }
+    }
+
+    /**
+     * Clears all saved loop configurations for the currently open folder.
+     */
+    public void clearAllLoopConfigs() {
+        if (currentConfigFolder != null) {
+            loopConfigMap.clear();
+            LOGGER.info("Cleared all loop configurations in folder: " + currentConfigFolder.getName());
+            saveConfigsToFile();
+        }
+    }
+
     /**
      * Converts an MP3 file to a PCM AudioInputStream using JLayer
      *
@@ -340,7 +363,7 @@ public class AudioService {
     }
 
 
-    // -- Utility Methods --
+    // -- Time Methods --
     /**
      * Parses a time string (MM:SS) into total seconds
      *
