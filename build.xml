@@ -1,8 +1,8 @@
 <project name="DMBuddy" default="run" basedir=".">
     <!-- Where to put compiled classes and copied resources -->
-    <property name="build.dir" value="build"/>
+    <property name="build.dir"   value="build"/>
     <property name="classes.dir" value="${build.dir}/classes"/>
-    <property name="resources" value="resources"/>
+    <property name="resources"   value="resources"/>
 
     <!-- 1) Prepare build dirs -->
     <target name="init">
@@ -22,8 +22,24 @@
         </copy>
     </target>
 
-    <!-- 3) Run the app (Main in the default package) -->
+    <!-- 3) Run the app with macOS-specific JVM arguments -->
     <target name="run" depends="compile">
+        <java classname="Main" fork="true" failonerror="true">
+            <classpath>
+                <pathelement path="${classes.dir}"/>
+            </classpath>
+            <!-- macOS-specific JVM arguments -->
+            <jvmarg value="-Dapple.awt.application.name=DnD Buddy"/>
+            <jvmarg value="-Dapple.laf.useScreenMenuBar=true"/>
+            <jvmarg value="-Dcom.apple.mrj.application.apple.menu.about.name=DnD Buddy"/>
+            <jvmarg value="-Dapple.awt.application.appearance=system"/>
+            <jvmarg value="-Xdock:name=DnD Buddy"/>
+            <jvmarg value="-Xdock:icon=${classes.dir}/images/icon.png"/>
+        </java>
+    </target>
+
+    <!-- 3b) Alternative run target for non-macOS systems -->
+    <target name="run-generic" depends="compile">
         <java classname="Main" fork="true" failonerror="true">
             <classpath>
                 <pathelement path="${classes.dir}"/>
@@ -31,7 +47,7 @@
         </java>
     </target>
 
-    <!-- 3) Package everything into a runnable JAR -->
+    <!-- 4) Package everything into a runnable JAR -->
     <target name="jar" depends="compile">
         <!-- ensure dist exists -->
         <mkdir dir="dist"/>
@@ -45,8 +61,53 @@
         </jar>
     </target>
 
-    <!-- 4) Clean up -->
+    <!-- 5) Create a macOS app bundle (requires additional setup) -->
+    <target name="mac-app" depends="jar">
+        <mkdir dir="dist/DnD Buddy.app"/>
+        <mkdir dir="dist/DnD Buddy.app/Contents"/>
+        <mkdir dir="dist/DnD Buddy.app/Contents/MacOS"/>
+        <mkdir dir="dist/DnD Buddy.app/Contents/Resources"/>
+
+        <!-- Copy the JAR -->
+        <copy file="dist/DMBuddy.jar" todir="dist/DnD Buddy.app/Contents/Resources"/>
+
+        <!-- Copy the icon -->
+        <copy file="${resources}/images/icon.png" tofile="dist/DnD Buddy.app/Contents/Resources/icon.icns"/>
+
+        <!-- Create Info.plist -->
+        <echo file="dist/DnD Buddy.app/Contents/Info.plist">&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+            &lt;!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"&gt;
+            &lt;plist version="1.0"&gt;
+            &lt;dict&gt;
+            &lt;key&gt;CFBundleDisplayName&lt;/key&gt;
+            &lt;string&gt;DnD Buddy&lt;/string&gt;
+            &lt;key&gt;CFBundleName&lt;/key&gt;
+            &lt;string&gt;DnD Buddy&lt;/string&gt;
+            &lt;key&gt;CFBundleIdentifier&lt;/key&gt;
+            &lt;string&gt;com.dndbuddy.app&lt;/string&gt;
+            &lt;key&gt;CFBundleVersion&lt;/key&gt;
+            &lt;string&gt;1.0&lt;/string&gt;
+            &lt;key&gt;CFBundleIconFile&lt;/key&gt;
+            &lt;string&gt;icon&lt;/string&gt;
+            &lt;key&gt;CFBundlePackageType&lt;/key&gt;
+            &lt;string&gt;APPL&lt;/string&gt;
+            &lt;key&gt;CFBundleExecutable&lt;/key&gt;
+            &lt;string&gt;DnD Buddy&lt;/string&gt;
+            &lt;/dict&gt;
+            &lt;/plist&gt;</echo>
+
+        <!-- Create launcher script -->
+        <echo file="dist/DnD Buddy.app/Contents/MacOS/DnD Buddy">#!/bin/bash
+            cd "$(dirname "$0")/../Resources"
+            java -Dapple.awt.application.name="DnD Buddy" -Xdock:name="DnD Buddy" -jar DMBuddy.jar</echo>
+
+        <!-- Make launcher executable -->
+        <chmod file="dist/DnD Buddy.app/Contents/MacOS/DnD Buddy" perm="755"/>
+    </target>
+
+    <!-- 6) Clean up -->
     <target name="clean">
         <delete dir="${build.dir}"/>
+        <delete dir="dist"/>
     </target>
 </project>
