@@ -34,7 +34,7 @@
     - [X] 1.2.3 Setup buttons (no functionality)
     - [X] 1.2.4 Setup Timeline (No Functionality)
     - [X] 1.2.5 Setup Explorer Window (No Functionality)
-- ### [] 1.3 Muscle
+- ### [X] 1.3 Muscle
     - [X] 1.3.1 Let "Load Audio File" open a file browser
     - [X] 1.3.2 Ability to actually load songs
     - [X] 1.3.3 Ability to PLAY songs that are loaded
@@ -47,7 +47,7 @@
     - [X] 1.3.10 Time formatting
     - [X] 1.3.11 File Explorer Window
     - [X] 1.3.12 Saving Loop Configs as a Session
-    - [] 1.3.13 Saving Loop Configs in a file
+    - [X] 1.3.13 Saving Loop Configs in a file
     - [X] 1.3.14 .WAV/.AU Support
     - [X] 1.3.15 .MP3 Support
     - [X] 1.3.16 Infinite Loop Toggle
