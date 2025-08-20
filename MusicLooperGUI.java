@@ -57,7 +57,7 @@ public class MusicLooperGUI {
         frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frmFoundation.setLayout(new BorderLayout());
 
-        JPanel mainControlPanel = new JPanel(new BorderLayout(Constants.GB_CONTROLPANEL_GAP_SPACING, Constants.GB_CONTROLPANEL_GAP_SPACING));
+        JPanel mainControlPanel = new JPanel(new BorderLayout(Constants.GB_HGAP_SPACING, Constants.GB_HGAP_SPACING));
         mainControlPanel.add(createLoopControlsPanel(), BorderLayout.CENTER);
         mainControlPanel.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
@@ -82,7 +82,7 @@ public class MusicLooperGUI {
      * Creates the file browser panel. The open folder button now delegates to the service.
      */
     private JPanel pnlCreateFileBrowser() {
-        JPanel pnlFileBrowser = new JPanel(new BorderLayout(Constants.GB_FILEBROWSER_SPACING, Constants.GB_FILEBROWSER_SPACING));
+        JPanel pnlFileBrowser = new JPanel(new BorderLayout(Constants.GB_VGAP_SPACING, Constants.GB_VGAP_SPACING));
         pnlFileBrowser.setBorder(BorderFactory.createTitledBorder("Audio Files"));
 
         btnOpenFolder = new JButton("Open Folder");
@@ -121,7 +121,7 @@ public class MusicLooperGUI {
      * @return A JPanel with the playback action buttons.
      */
     private JPanel createButtonPanel() {
-        JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
+        JPanel pnlButtonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER, Constants.GB_HGAP_SPACING, Constants.GB_VGAP_SPACING));
         btnPlay = new JButton("Play");
         btnPlay.addActionListener(e -> {
             audioService.play();
@@ -150,7 +150,7 @@ public class MusicLooperGUI {
      * @return A JPanel with the JSlider and time labels.
      */
     private JPanel createTimelinePanel() {
-        JPanel pnlTimeline = new JPanel(new BorderLayout(10, 0));
+        JPanel pnlTimeline = new JPanel(new BorderLayout(Constants.GB_HGAP_SPACING, 0));
         lblStartTime = new JLabel("00:00.000");
         lblEndTime = new JLabel("00:00.000");
         sldrTimelineSlider = new JSlider(0, 0, 0);
@@ -187,10 +187,12 @@ public class MusicLooperGUI {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder("Loop Settings"));
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(Constants.GB_INSET_VALS, Constants.GB_INSET_VALS, Constants.GB_INSET_VALS, Constants.GB_INSET_VALS);
         gbc.anchor = GridBagConstraints.WEST;
 
         SimpleDocumentListener listener = e -> { if (!updatingUI) audioService.updateCurrentConfig(getCurrentConfigFromUI()); };
+
+        //TODO: Figure out a way to simplify these; Loop over them?
 
         // --- Row 0: Loop Start ---
         gbc.gridx = 0; gbc.gridy = 0; panel.add(new JLabel("Loop Start:"), gbc);
@@ -250,7 +252,7 @@ public class MusicLooperGUI {
      */
     private JPanel createPlaybackControlsPanel() {
         JPanel pnlControlContainer = new JPanel(new BorderLayout());
-        pnlControlContainer.setBorder(new EmptyBorder(10, 10, 10, 10));
+        pnlControlContainer.setBorder(Constants.GB_CONTROLCONTAINER_BORDER);
         pnlControlContainer.add(createTimelinePanel(), BorderLayout.NORTH);
         pnlControlContainer.add(createButtonPanel(), BorderLayout.CENTER);
         return pnlControlContainer;

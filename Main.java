@@ -58,7 +58,7 @@ public class Main {
         setupApplicationIcon(frmFoundation);
 
         frmFoundation.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frmFoundation.setSize(Constants.FOUNDATION_PANEL_WIDTH, Constants.FOUNDATION_PANEL_HEIGHT); // Made slightly larger to accommodate background
+        frmFoundation.setSize(Constants.MM_FOUNDATION_PANEL_WIDTH, Constants.MM_FOUNDATION_PANEL_HEIGHT); // Made slightly larger to accommodate background
         frmFoundation.setLocationRelativeTo(null);
         frmFoundation.setResizable(false); // Prevents background scaling issues
 
@@ -86,14 +86,14 @@ public class Main {
         contentPanel.setOpaque(false); // Make transparent to show background
 
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(Constants.INSET_VALS, Constants.INSET_VALS, Constants.INSET_VALS, Constants.INSET_VALS);
+        gbc.insets = new Insets(Constants.MM_INSET_VALS, Constants.MM_INSET_VALS, Constants.MM_INSET_VALS, Constants.MM_INSET_VALS);
         gbc.anchor = GridBagConstraints.CENTER;
 
         // Title label
         JLabel titleLabel = new JLabel("DnD Buddy", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Serif", Font.BOLD, Constants.TITLE_TEXT_SIZE));
+        titleLabel.setFont(new Font("Serif", Font.BOLD, Constants.MM_TITLE_TEXT_SIZE));
         titleLabel.setForeground(Color.WHITE); // Color of the Text
-        gbc.gridwidth = Constants.GRIDBAG_WIDTH;
+        gbc.gridwidth = Constants.MM_GRIDBAG_WIDTH;
         contentPanel.add(titleLabel, gbc);
 
         // Create styled buttons
@@ -107,13 +107,13 @@ public class Main {
         btnQuit.addActionListener(e -> System.exit(0));
 
         // Add buttons with spacing
-        gbc.gridwidth = Constants.GRIDBAG_GRID_SPACING;
-        gbc.gridy = Constants.GRIDBAG_GRID_SPACING;
+        gbc.gridwidth = Constants.MM_GRIDBAG_GRID_SPACING;
+        gbc.gridy = Constants.MM_GRIDBAG_GRID_SPACING;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = Constants.GRIDBAG_GRID_WEIGHT;
+        gbc.weightx = Constants.MM_GRIDBAG_GRID_WEIGHT;
         contentPanel.add(btnGrooveBuddy, gbc);
 
-        gbc.gridx = Constants.GRIDBAG_GRID_SPACING;
+        gbc.gridx = Constants.MM_GRIDBAG_GRID_SPACING;
         contentPanel.add(btnQuit, gbc);
 
         return contentPanel;
@@ -124,11 +124,11 @@ public class Main {
      */
     private static JButton createStyledButton(String text) {
         JButton button = new JButton(text);
-        button.setFont(new Font("Serif", Font.BOLD, Constants.BUTTON_TEXT_SIZE));
-        button.setPreferredSize(new Dimension(Constants.BUTTON_PREFERRED_WIDTH, Constants.BUTTON_PREFERRED_HEIGHT));
+        button.setFont(new Font("Serif", Font.BOLD, Constants.MM_BUTTON_TEXT_SIZE));
+        button.setPreferredSize(new Dimension(Constants.MM_BUTTON_PREFERRED_WIDTH, Constants.MM_BUTTON_PREFERRED_HEIGHT));
 
         // Style the button for better visibility over background
-        button.setBackground(Constants.BUTTON_BG_COLOR); // Semi-transparent dark
+        button.setBackground(Constants.MM_BUTTON_BG_COLOR); // Semi-transparent dark
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setBorder(BorderFactory.createRaisedBevelBorder());
@@ -136,10 +136,10 @@ public class Main {
         // Add hover effects
         button.addMouseListener(new MouseAdapter() {
             public void mouseEntered(MouseEvent evt) {
-                button.setBackground(Constants.BUTTON_HOVER_COLOR);
+                button.setBackground(Constants.MM_BUTTON_HOVER_COLOR);
             }
             public void mouseExited(MouseEvent evt) {
-                button.setBackground(Constants.BUTTON_BG_COLOR);
+                button.setBackground(Constants.MM_BUTTON_BG_COLOR);
             }
         });
 
@@ -203,16 +203,16 @@ public class Main {
 
         private void createGradientBackground() {
             // Create a simple gradient as fallback
-            backgroundImage = new BufferedImage(Constants.FOUNDATION_PANEL_WIDTH, Constants.FOUNDATION_PANEL_HEIGHT, BufferedImage.TYPE_INT_RGB);
+            backgroundImage = new BufferedImage(Constants.MM_FOUNDATION_PANEL_WIDTH, Constants.MM_FOUNDATION_PANEL_HEIGHT, BufferedImage.TYPE_INT_RGB);
             Graphics2D g2d = backgroundImage.createGraphics();
 
             GradientPaint gradient = new GradientPaint(
-                    0, 0, Constants.GRADIENT_COLOR_1,     // Light Blue Top #CFD5EF
-                    0, 400, Constants.GRADIENT_COLOR_2    // Darker Purple Bottom #543DC4
+                    0, 0, Constants.MM_GRADIENT_COLOR_1,     // Light Blue Top #CFD5EF
+                    0, 400, Constants.MM_GRADIENT_COLOR_2    // Darker Purple Bottom #543DC4
             );
 
             g2d.setPaint(gradient);
-            g2d.fillRect(0, 0,Constants.FOUNDATION_PANEL_WIDTH, Constants.FOUNDATION_PANEL_HEIGHT);
+            g2d.fillRect(0, 0,Constants.MM_FOUNDATION_PANEL_WIDTH, Constants.MM_FOUNDATION_PANEL_HEIGHT);
             g2d.dispose();
         }
 
@@ -238,8 +238,8 @@ public class Main {
 
                 int scaledWidth = (int) (backgroundImage.getWidth() * scale);
                 int scaledHeight = (int) (backgroundImage.getHeight() * scale);
-                int x = Constants.scaledToFit(panelWidth,scaledWidth);
-                int y = Constants.scaledToFit(panelHeight,scaledHeight);
+                int x = Constants.MM_scaledToFit(panelWidth,scaledWidth);
+                int y = Constants.MM_scaledToFit(panelHeight,scaledHeight);
 
                 g2d.drawImage(backgroundImage, x, y, scaledWidth, scaledHeight, null);
 
