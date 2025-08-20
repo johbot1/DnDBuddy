@@ -2,7 +2,6 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.io.File;
-import java.util.function.Supplier;
 
 /**
  * MusicLooperGUI sets up the main graphical user interface for the music looper application.
@@ -58,21 +57,21 @@ public class MusicLooperGUI {
         frmFoundation.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         frmFoundation.setLayout(new BorderLayout());
 
-        JPanel mainControlPanel = new JPanel(new BorderLayout(10, 10));
+        JPanel mainControlPanel = new JPanel(new BorderLayout(Constants.GB_CONTROLPANEL_GAP_SPACING, Constants.GB_CONTROLPANEL_GAP_SPACING));
         mainControlPanel.add(createLoopControlsPanel(), BorderLayout.CENTER);
         mainControlPanel.add(createPlaybackControlsPanel(), BorderLayout.SOUTH);
 
         JPanel fileBrowserPanel = pnlCreateFileBrowser();
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, mainControlPanel, fileBrowserPanel);
-        splitPane.setResizeWeight(0.8);
+        splitPane.setResizeWeight(Constants.GB_SPLITPANE_RESIZE);
 
         frmFoundation.add(splitPane, BorderLayout.CENTER);
 
         setPlaybackButtonsEnabled(false);
         setLoopControlsEnabled(false);
 
-        frmFoundation.setSize(1000, 600);
+        frmFoundation.setSize(Constants.GB_FOUNDATIONPANEL_WIDTH, Constants.GB_FOUNDATIONPANEL_HEIGHT);
         frmFoundation.setLocationRelativeTo(null);
         frmFoundation.setVisible(true);
         frmFoundation.setResizable(true);
@@ -83,13 +82,13 @@ public class MusicLooperGUI {
      * Creates the file browser panel. The open folder button now delegates to the service.
      */
     private JPanel pnlCreateFileBrowser() {
-        JPanel panel = new JPanel(new BorderLayout(5, 5));
-        panel.setBorder(BorderFactory.createTitledBorder("Audio Files"));
+        JPanel pnlFileBrowser = new JPanel(new BorderLayout(Constants.GB_FILEBROWSER_SPACING, Constants.GB_FILEBROWSER_SPACING));
+        pnlFileBrowser.setBorder(BorderFactory.createTitledBorder("Audio Files"));
 
         btnOpenFolder = new JButton("Open Folder");
-        // THIS IS THE KEY CHANGE: The button now calls the service's method.
+        // Button now calls the service's method.
         btnOpenFolder.addActionListener(e -> audioService.openFolder());
-        panel.add(btnOpenFolder, BorderLayout.NORTH);
+        pnlFileBrowser.add(btnOpenFolder, BorderLayout.NORTH);
 
         // The fileListModel is now created in initUI and passed to the service.
         // The service is responsible for adding/removing files.
@@ -111,9 +110,9 @@ public class MusicLooperGUI {
             }
         });
         JScrollPane scrollPane = new JScrollPane(fileList);
-        panel.add(scrollPane, BorderLayout.CENTER);
-        panel.setPreferredSize(new Dimension(200, 0));
-        return panel;
+        pnlFileBrowser.add(scrollPane, BorderLayout.CENTER);
+        pnlFileBrowser.setPreferredSize(Constants.GB_FILEBROWSER_DIMENSION);
+        return pnlFileBrowser;
     }
 
     /**
@@ -135,7 +134,7 @@ public class MusicLooperGUI {
             audioService.stop();
             btnPlay.setText("Play");
         });
-        Dimension buttonSize = new Dimension(80, 30);
+        Dimension buttonSize = Constants.GB_BUTTON_SIZE;
         btnPlay.setPreferredSize(buttonSize);
         btnPause.setPreferredSize(buttonSize);
         btnStop.setPreferredSize(buttonSize);
